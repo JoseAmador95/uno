@@ -1,45 +1,8 @@
+use card::{Card, CardValue, Colour};
 use rand::{seq::SliceRandom, thread_rng};
 use std::io;
 
-#[derive(Clone, Copy, PartialEq, Debug)]
-enum Colour {
-    Red,
-    Yellow,
-    Green,
-    Blue,
-}
-
-#[derive(Clone, Copy, PartialEq, Debug)]
-enum CardValue {
-    Reverse,
-    Skip,
-    DrawTwo,
-    Number(u8),
-}
-
-#[derive(Clone, Copy, Debug)]
-struct Card {
-    colour: Colour,
-    value: CardValue,
-}
-
-impl std::fmt::Display for Card {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        let colour = match self.colour {
-            Colour::Blue => "blue",
-            Colour::Red => "red",
-            Colour::Yellow => "yellow",
-            Colour::Green => "green",
-        };
-        let value = match self.value {
-            CardValue::DrawTwo => "Draw Two".to_string(),
-            CardValue::Reverse => "Reverse".to_string(),
-            CardValue::Skip => "Skip".to_string(),
-            CardValue::Number(n) => format!("Number {n}", n = n),
-        };
-        write!(f, "{colour} {value}")
-    }
-}
+mod card;
 
 #[rustfmt::skip]
 const GAME_DECK: [Card; 100] = [
