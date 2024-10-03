@@ -11,29 +11,32 @@ pub struct Game {
 }
 
 impl Game {
-    fn action_draw_two(&mut self, player_index: usize) {
-        self.players[player_index].draw(&mut self.deck);
-        self.players[player_index].draw(&mut self.deck);
+    fn action_draw_two(&mut self, next_player_index: usize) {
+        self.players[next_player_index].draw(&mut self.deck);
+        self.players[next_player_index].draw(&mut self.deck);
     }
 
     fn player_turn(&mut self, player_index: usize, card: &Card) {
         match card.value {
             CardValue::Number(_) => {}
-            CardValue::DrawTwo => self.action_draw_two(player_index),
-            CardValue::Skip => self.next_player(),
+            CardValue::DrawTwo => self.action_draw_two(self.get_next_player(player_index)),
+            CardValue::Skip => self.set_next_player(),
             CardValue::Reverse => self.revese_direction(),
         };
         self.deck.discard(*card);
     }
 
-    fn next_player(&mut self) {
-        if !self.is_direction_ascending && self.player_index == 0 {
-            self.player_index = self.players.len() - 1;
+    fn get_next_player(&self, current_player_index: usize) -> usize {
+        if !self.is_direction_ascending && current_player_index == 0 {
+            self.players.len() - 1
         } else {
             let index_increment: isize = if self.is_direction_ascending { 1 } else { -1 };
-            self.player_index =
-                (self.player_index.wrapping_add_signed(index_increment)) % self.players.len();
+            (current_player_index.wrapping_add_signed(index_increment)) % self.players.len()
         }
+    }
+
+    fn set_next_player(&mut self) {
+        self.player_index = self.get_next_player(self.player_index);
     }
 
     fn revese_direction(&mut self) {
@@ -50,6 +53,38 @@ impl Game {
         }
     }
 
+    fn play_turn(&mut self, player_index: usize) {
+        loop {
+            match get_user_action() {
+                UserAction::Draw => {
+                    self.players[player_index].draw(&mut self.deck);
+                    break;
+                }
+                UserAction::Play(index) => {
+                    if let Ok(card) = self.players[player_index].play_card(index) {
+                        if self.is_valid_play(card) {
+                            self.player_turn(player_index, &card);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    fn deal_cards_to_players(&mut self, num_of_cards: usize) {
+        let num_of_players = self.players.len();
+        for i in 0..num_of_players {
+            for _ in 0..num_of_cards {
+                self.players[i].draw(&mut self.deck);
+            }
+        }
+    }
+
+    fn has_player_won(&self, player_index: usize) -> bool {
+        self.players[player_index].is_hand_empty()
+    }
+
     pub fn new(num_of_players: usize) -> Self {
         let players = (0..num_of_players).map(Player::new).collect();
         Game {
@@ -61,35 +96,14 @@ impl Game {
     }
 
     pub fn start_game(&mut self) {
-        let num_of_players = self.players.len();
-        for i in 0..num_of_players {
-            for _ in 0..7 {
-                self.players[i].draw(&mut self.deck);
-            }
-        }
+        self.deal_cards_to_players(7);
 
         let winner = loop {
             get_game_context(&self.players[self.player_index], &self.deck);
-            self.players[self.player_index].print_hand();
 
-            loop {
-                match get_user_action() {
-                    UserAction::Draw => {
-                        self.players[self.player_index].draw(&mut self.deck);
-                        break;
-                    }
-                    UserAction::Play(index) => {
-                        if let Ok(card) = self.players[self.player_index].play_card(index) {
-                            if self.is_valid_play(card) {
-                                self.player_turn(self.player_index, &card);
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
+            self.play_turn(self.player_index);
 
-            if self.players[self.player_index].is_hand_empty() {
+            if self.has_player_won(self.player_index) {
                 break self.player_index;
             }
 
@@ -97,7 +111,7 @@ impl Game {
                 self.deck.refill_draw_pile();
             }
 
-            self.next_player();
+            self.set_next_player();
         };
 
         announce_winner(&self.players[winner]);
