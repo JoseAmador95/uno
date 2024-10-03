@@ -1,7 +1,7 @@
 use crate::card::{Card, CardValue};
 use crate::deck::Deck;
 use crate::player::Player;
-use std::io;
+use crate::ui::{announce_winner, get_game_context, get_user_action, UserAction};
 
 pub struct Game {
     players: Vec<Player>,
@@ -11,13 +11,15 @@ pub struct Game {
 }
 
 impl Game {
+    fn action_draw_two(&mut self, player_index: usize) {
+        self.players[player_index].draw(&mut self.deck);
+        self.players[player_index].draw(&mut self.deck);
+    }
+
     fn player_turn(&mut self, player_index: usize, card: &Card) {
         match card.value {
             CardValue::Number(_) => {}
-            CardValue::DrawTwo => {
-                self.players[player_index].draw(&mut self.deck);
-                self.players[player_index].draw(&mut self.deck);
-            }
+            CardValue::DrawTwo => self.action_draw_two(player_index),
             CardValue::Skip => self.next_player(),
             CardValue::Reverse => self.revese_direction(),
         };
@@ -67,55 +69,37 @@ impl Game {
         }
 
         let winner = loop {
-            println!("Player {player}'s turn", player = self.player_index);
-            println!(
-                "Number of cards in the draw pile: {}",
-                self.deck.number_of_cards_in_draw_pile()
-            );
-            if let Some(card) = self.deck.get_top_card() {
-                println!("card on top: {card}");
-            } else {
-                print!("No card on top... somehow...")
-            }
+            get_game_context(&self.players[self.player_index], &self.deck);
             self.players[self.player_index].print_hand();
-            let mut input = String::new();
-            io::stdin()
-                .read_line(&mut input)
-                .expect("Failed to read line");
-            let mut index: usize = input.trim().parse().expect("Failed to parse number");
 
-            let player_draws = index == 99;
-
-            if player_draws {
-                self.players[self.player_index].draw(&mut self.deck);
-            } else {
-                let card = loop {
-                    if let Ok(card) = self.players[self.player_index].play_card(index) {
-                        break card;
-                    } else {
-                        let mut input = String::new();
-                        io::stdin()
-                            .read_line(&mut input)
-                            .expect("Failed to read line");
-                        index = input.trim().parse().expect("Failed to parse number");
+            loop {
+                match get_user_action() {
+                    UserAction::Draw => {
+                        self.players[self.player_index].draw(&mut self.deck);
+                        break;
                     }
-                };
-                let is_valid_play = self.is_valid_play(card);
-                if is_valid_play {
-                    self.player_turn(self.player_index, &card);
+                    UserAction::Play(index) => {
+                        if let Ok(card) = self.players[self.player_index].play_card(index) {
+                            if self.is_valid_play(card) {
+                                self.player_turn(self.player_index, &card);
+                                break;
+                            }
+                        }
+                    }
                 }
-                if self.players[self.player_index].is_hand_empty() {
-                    println!("Game over");
-                    break self.player_index;
-                }
-                if self.deck.draw_pile_is_empty() {
-                    self.deck.refill_draw_pile();
-                }
+            }
+
+            if self.players[self.player_index].is_hand_empty() {
+                break self.player_index;
+            }
+
+            if self.deck.draw_pile_is_empty() {
+                self.deck.refill_draw_pile();
             }
 
             self.next_player();
         };
 
-        println!("Player {winner} wins!");
+        announce_winner(&self.players[winner]);
     }
 }

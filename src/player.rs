@@ -25,6 +25,10 @@ impl Player {
         self.hand.is_empty()
     }
 
+    pub fn get_id(&self) -> usize {
+        self.id
+    }
+
     pub fn print_hand(&self) {
         let _ = self
             .hand

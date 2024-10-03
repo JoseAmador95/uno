@@ -5,6 +5,7 @@ mod deck;
 mod default_deck;
 mod game;
 mod player;
+mod ui;
 
 fn main() {
     println!("Hello world!");
