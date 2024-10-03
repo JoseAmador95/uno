@@ -1,7 +1,7 @@
 use crate::{deck::Deck, player::Player};
 use std::io;
 
-const DRAW_INDEX: usize = 99;
+const DRAW_INDEX: &str = "d";
 
 pub enum UserAction {
     Draw,
@@ -26,19 +26,17 @@ pub fn get_game_context(player: &Player, deck: &Deck) {
 pub fn get_user_action() -> UserAction {
     let mut input = String::new();
 
-    let index = loop {
+    loop {
         if io::stdin().read_line(&mut input).is_ok() {
             if let Ok(index) = input.trim().parse::<usize>() {
-                break index;
+                return UserAction::Play(index);
+            } else if let Ok(str) = input.trim().parse::<String>() {
+                if str == DRAW_INDEX {
+                    return UserAction::Draw;
+                }
             }
         }
         input.clear();
-    };
-
-    if index == DRAW_INDEX {
-        UserAction::Draw
-    } else {
-        UserAction::Play(index)
     }
 }
 
