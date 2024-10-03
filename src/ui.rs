@@ -1,6 +1,8 @@
 use crate::{deck::Deck, player::Player};
 use std::io;
 
+const DRAW_INDEX: usize = 99;
+
 pub enum UserAction {
     Draw,
     Play(usize),
@@ -17,6 +19,8 @@ pub fn get_game_context(player: &Player, deck: &Deck) {
     } else {
         print!("No card on top... somehow...")
     }
+    player.print_hand();
+    println!("{DRAW_INDEX:02}: Draw card")
 }
 
 pub fn get_user_action() -> UserAction {
@@ -31,7 +35,7 @@ pub fn get_user_action() -> UserAction {
         input.clear();
     };
 
-    if index == 99 {
+    if index == DRAW_INDEX {
         UserAction::Draw
     } else {
         UserAction::Play(index)
