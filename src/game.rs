@@ -18,10 +18,10 @@ impl Game {
 
     fn player_turn(&mut self, player_index: usize, card: &Card) {
         match card.value {
-            CardValue::Number(_) => {}
             CardValue::DrawTwo => self.action_draw_two(self.get_next_player(player_index)),
             CardValue::Skip => self.set_next_player(),
             CardValue::Reverse => self.revese_direction(),
+            _ => {}
         };
         self.deck.discard(*card);
     }
