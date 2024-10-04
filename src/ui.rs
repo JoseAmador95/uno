@@ -1,4 +1,4 @@
-use crate::{deck::Deck, player::Player};
+use crate::{card::Colour, deck::Deck, player::Player};
 use std::io;
 
 const DRAW_INDEX: &str = "d";
@@ -42,4 +42,32 @@ pub fn get_user_turn_action() -> UserAction {
 
 pub fn announce_winner(player: &Player) {
     println!("Player {id} wins!", id = player.get_id());
+}
+
+pub fn get_user_wild_colour() -> Colour {
+    let mut input = String::new();
+
+    println!("r: Red");
+    println!("g: Green");
+    println!("b: Blue");
+    println!("y: Yellow");
+
+    loop {
+        if io::stdin().read_line(&mut input).is_ok() {
+            if let Ok(str) = input.trim().parse::<String>() {
+                let colour = match str.as_str() {
+                    "r" => Ok(Colour::Red),
+                    "g" => Ok(Colour::Green),
+                    "b" => Ok(Colour::Blue),
+                    "y" => Ok(Colour::Yellow),
+                    _ => Err(()),
+                };
+
+                if let Ok(c) = colour {
+                    return c;
+                }
+            }
+        }
+        input.clear();
+    }
 }

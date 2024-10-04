@@ -1,7 +1,7 @@
 use crate::card::{Card, CardValue, Colour};
 
 #[rustfmt::skip]
-pub const GAME_DECK: [Card; 100] = [
+pub const GAME_DECK: [Card; 108] = [
     Card { colour: Colour::Red,    value: CardValue::Number(0) },
     Card { colour: Colour::Red,    value: CardValue::Number(1) },
     Card { colour: Colour::Red,    value: CardValue::Number(1) },
@@ -102,4 +102,12 @@ pub const GAME_DECK: [Card; 100] = [
     Card { colour: Colour::Yellow, value: CardValue::DrawTwo },
     Card { colour: Colour::Yellow, value: CardValue::Reverse },
     Card { colour: Colour::Yellow, value: CardValue::Reverse },
+    Card { colour: Colour::Wild,   value: CardValue::Wild },
+    Card { colour: Colour::Wild,   value: CardValue::Wild },
+    Card { colour: Colour::Wild,   value: CardValue::Wild },
+    Card { colour: Colour::Wild,   value: CardValue::Wild },
+    Card { colour: Colour::Wild,   value: CardValue::WildDraw(4) },
+    Card { colour: Colour::Wild,   value: CardValue::WildDraw(4) },
+    Card { colour: Colour::Wild,   value: CardValue::WildDraw(4) },
+    Card { colour: Colour::Wild,   value: CardValue::WildDraw(4) },
 ];

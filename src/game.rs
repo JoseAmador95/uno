@@ -1,7 +1,9 @@
-use crate::card::{Card, CardValue};
+use crate::card::{Card, CardValue, Colour};
 use crate::deck::Deck;
 use crate::player::Player;
-use crate::ui::{announce_winner, get_game_context, get_user_turn_action, UserAction};
+use crate::ui::{
+    announce_winner, get_game_context, get_user_turn_action, get_user_wild_colour, UserAction,
+};
 
 pub struct Game {
     players: Vec<Player>,
@@ -11,16 +13,38 @@ pub struct Game {
 }
 
 impl Game {
-    fn action_draw_two(&mut self, next_player_index: usize) {
-        self.players[next_player_index].draw(&mut self.deck);
-        self.players[next_player_index].draw(&mut self.deck);
+    fn make_player_draw(&mut self, next_player_index: usize, num_of_cards: u8) {
+        for _ in 0..num_of_cards {
+            self.players[next_player_index].draw(&mut self.deck);
+        }
     }
 
-    fn player_turn(&mut self, player_index: usize, card: &Card) {
+    fn change_wild_color(&mut self, card: &mut Card) {
+        let colour = get_user_wild_colour();
+        card.colour = colour;
+    }
+
+    fn choose_colur_and_draw(
+        &mut self,
+        next_player_index: usize,
+        num_of_cards: u8,
+        card: &mut Card,
+    ) {
+        self.make_player_draw(next_player_index, num_of_cards);
+        self.change_wild_color(card);
+    }
+
+    fn player_turn(&mut self, player_index: usize, card: &mut Card) {
         match card.value {
-            CardValue::DrawTwo => self.action_draw_two(self.get_next_player(player_index)),
+            CardValue::DrawTwo => self.make_player_draw(self.get_next_player(player_index), 2),
             CardValue::Skip => self.set_next_player(),
             CardValue::Reverse => self.revese_direction(),
+            CardValue::Wild => {
+                self.change_wild_color(card);
+            }
+            CardValue::WildDraw(n) => {
+                self.choose_colur_and_draw(self.get_next_player(player_index), n, card);
+            }
             _ => {}
         };
         self.deck.discard(*card);
@@ -45,7 +69,9 @@ impl Game {
 
     fn is_valid_play(&self, card: Card) -> bool {
         if let Some(card_on_top) = self.deck.get_top_card() {
-            card.colour == card_on_top.colour || card.value == card_on_top.value
+            card.colour == card_on_top.colour
+                || card.value == card_on_top.value
+                || card.colour == Colour::Wild
         } else {
             // There is no card on top of the discard pile (for some reason)
             // So might as well play whatever the player wants
@@ -61,9 +87,9 @@ impl Game {
                     break;
                 }
                 UserAction::Play(index) => {
-                    if let Ok(card) = self.players[player_index].play_card(index) {
+                    if let Ok(mut card) = self.players[player_index].play_card(index) {
                         if self.is_valid_play(card) {
-                            self.player_turn(player_index, &card);
+                            self.player_turn(player_index, &mut card);
                             break;
                         }
                     }
