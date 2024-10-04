@@ -1,7 +1,7 @@
 use crate::card::{Card, CardValue};
 use crate::deck::Deck;
 use crate::player::Player;
-use crate::ui::{announce_winner, get_game_context, get_user_action, UserAction};
+use crate::ui::{announce_winner, get_game_context, get_user_turn_action, UserAction};
 
 pub struct Game {
     players: Vec<Player>,
@@ -55,7 +55,7 @@ impl Game {
 
     fn play_turn(&mut self, player_index: usize) {
         loop {
-            match get_user_action() {
+            match get_user_turn_action() {
                 UserAction::Draw => {
                     self.players[player_index].draw(&mut self.deck);
                     break;

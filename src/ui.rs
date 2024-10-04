@@ -23,7 +23,7 @@ pub fn get_game_context(player: &Player, deck: &Deck) {
     println!("{DRAW_INDEX:02}: Draw card")
 }
 
-pub fn get_user_action() -> UserAction {
+pub fn get_user_turn_action() -> UserAction {
     let mut input = String::new();
 
     loop {
