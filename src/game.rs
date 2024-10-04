@@ -5,11 +5,24 @@ use crate::ui::{
     announce_winner, get_game_context, get_user_turn_action, get_user_wild_colour, UserAction,
 };
 
+pub fn check_game_attributes(num_of_players: usize, num_of_cards: usize) -> Result<(), String> {
+    if num_of_cards > 10 {
+        return Err("The maximum number of cards is 10".to_string());
+    }
+
+    if num_of_players > 10 {
+        return Err("The maximum number of players is 10".to_string());
+    }
+
+    Ok(())
+}
+
 pub struct Game {
     players: Vec<Player>,
     deck: Deck,
     player_index: usize,
     is_direction_ascending: bool,
+    num_of_cards: usize,
 }
 
 impl Game {
@@ -111,18 +124,19 @@ impl Game {
         self.players[player_index].is_hand_empty()
     }
 
-    pub fn new(num_of_players: usize) -> Self {
+    pub fn new(num_of_players: usize, num_of_cards: usize) -> Self {
         let players = (0..num_of_players).map(Player::new).collect();
         Game {
             players,
             deck: Deck::new(),
             player_index: 0,
             is_direction_ascending: true,
+            num_of_cards,
         }
     }
 
     pub fn start_game(&mut self) {
-        self.deal_cards_to_players(7);
+        self.deal_cards_to_players(self.num_of_cards);
 
         let winner = loop {
             get_game_context(&self.players[self.player_index], &self.deck);
