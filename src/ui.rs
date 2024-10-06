@@ -23,10 +23,10 @@ pub fn get_game_context(player: &Player, deck: &Deck) {
     if let Ok(card) = deck.get_top_card() {
         println!("card on top: {card}");
     } else {
-        print!("No card on top... somehow...")
+        print!("No card on top... somehow...");
     }
     player.print_hand();
-    println!("{DRAW_INDEX:02}: Draw card")
+    println!("{DRAW_INDEX:02}: Draw card");
 }
 
 pub fn get_user_turn_action() -> UserAction {
