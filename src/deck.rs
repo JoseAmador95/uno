@@ -71,9 +71,10 @@ impl Deck {
             discard_pile: VecDeque::new(),
         };
         deck.shuffle();
-        if deck.discard_from_draw_pile().is_err() {
-            panic!("Error while creating the game decks")
-        }
+        assert!(
+            deck.discard_from_draw_pile().is_ok(),
+            "Error while creating the game decks"
+        );
         deck
     }
 }
