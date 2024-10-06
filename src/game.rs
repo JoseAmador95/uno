@@ -85,6 +85,7 @@ impl Game {
             card.colour == card_on_top.colour
                 || card.value == card_on_top.value
                 || card.colour == Colour::Wild
+                || card_on_top.colour == Colour::Wild
         } else {
             // There is no card on top of the discard pile (for some reason)
             // So might as well play whatever the player wants
