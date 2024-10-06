@@ -1,13 +1,13 @@
 use crate::card::{Card, Colour, Value};
-use crate::deck::{Deck, Error};
+use crate::deck;
 use crate::player::{Player, PlayerError};
 use crate::ui::{
     announce_winner, get_game_context, get_user_turn_action, get_user_wild_colour, UserAction,
 };
 
-type GameResult<T> = Result<T, GameError>;
+type GameResult<T> = Result<T, Error>;
 
-pub enum GameError {
+pub enum Error {
     DrawPileIsEmpty,
     InvalidPlay,
     Unknown,
@@ -32,7 +32,7 @@ pub fn check_game_attributes(num_of_players: usize, num_of_cards: usize) -> Resu
 
 pub struct Game {
     players: Vec<Player>,
-    deck: Deck,
+    deck: deck::Deck,
     player_index: usize,
     is_direction_ascending: bool,
     num_of_cards: usize,
@@ -41,7 +41,7 @@ pub struct Game {
 impl Game {
     fn player_draws(
         player: &mut Player,
-        deck: &mut Deck,
+        deck: &mut deck::Deck,
         refill_draw_pile_if_empty: bool,
     ) -> GameResult<GameAction> {
         match player.draw(deck) {
@@ -51,10 +51,10 @@ impl Game {
                     let _ = deck.refill_draw_pile(); // No need to check for DiscardPileIsEmpty
                     Self::player_draws(player, deck, false)
                 } else {
-                    Err(GameError::DrawPileIsEmpty)
+                    Err(Error::DrawPileIsEmpty)
                 }
             }
-            _ => Err(GameError::Unknown),
+            _ => Err(Error::Unknown),
         }
     }
 
@@ -79,7 +79,7 @@ impl Game {
     ) {
         match self.make_player_draw(next_player_index, num_of_cards) {
             Ok(_) => {}
-            Err(GameError::DrawPileIsEmpty) => {
+            Err(Error::DrawPileIsEmpty) => {
                 todo!("There are not enough cards on the draw and discard piles to take two cards")
             }
             _ => {}
@@ -90,7 +90,7 @@ impl Game {
     fn handle_draw_two(&mut self, next_player_index: usize) {
         match self.make_player_draw(next_player_index, 2) {
             Ok(_) => {}
-            Err(GameError::DrawPileIsEmpty) => {
+            Err(Error::DrawPileIsEmpty) => {
                 todo!("There are not enough cards on the draw and discard piles to take two cards")
             }
             _ => {}
@@ -135,7 +135,7 @@ impl Game {
                     || card.colour == Colour::Wild
                     || card_on_top.colour == Colour::Wild
             }
-            Err(Error::DiscardPileIsEmpty) => {
+            Err(deck::Error::DiscardPileIsEmpty) => {
                 // There is no card on top of the discard pile (for some reason)
                 // So might as well play whatever the player wants
                 true
@@ -152,10 +152,10 @@ impl Game {
                     if self.is_valid_play(card) {
                         Ok(GameAction::PlayerPlaysCard(i))
                     } else {
-                        Err(GameError::InvalidPlay)
+                        Err(Error::InvalidPlay)
                     }
                 } else {
-                    Err(GameError::InvalidPlay)
+                    Err(Error::InvalidPlay)
                 }
             }
         }
@@ -180,7 +180,7 @@ impl Game {
                     self.deck.discard(card);
                     Ok(GameAction::PlayerPlaysCard(index))
                 } else {
-                    Err(GameError::Unknown)
+                    Err(Error::Unknown)
                 }
             }
         }
@@ -203,7 +203,7 @@ impl Game {
         let players = (0..num_of_players).map(Player::new).collect();
         Game {
             players,
-            deck: Deck::new(),
+            deck: deck::Deck::new(),
             player_index: 0,
             is_direction_ascending: true,
             num_of_cards,
