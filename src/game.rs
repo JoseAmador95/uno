@@ -1,6 +1,6 @@
 use crate::card::{Card, Colour, Value};
 use crate::deck;
-use crate::player::{Player, PlayerError};
+use crate::player;
 use crate::ui::{
     announce_winner, get_game_context, get_user_turn_action, get_user_wild_colour, UserAction,
 };
@@ -31,7 +31,7 @@ pub fn check_game_attributes(num_of_players: usize, num_of_cards: usize) -> Resu
 }
 
 pub struct Game {
-    players: Vec<Player>,
+    players: Vec<player::Player>,
     deck: deck::Deck,
     player_index: usize,
     is_direction_ascending: bool,
@@ -40,13 +40,13 @@ pub struct Game {
 
 impl Game {
     fn player_draws(
-        player: &mut Player,
+        player: &mut player::Player,
         deck: &mut deck::Deck,
         refill_draw_pile_if_empty: bool,
     ) -> GameResult<GameAction> {
         match player.draw(deck) {
             Ok(()) => Ok(GameAction::PlayerDraw),
-            Err(PlayerError::DrawPileIsEmpty) => {
+            Err(player::Error::DrawPileIsEmpty) => {
                 if refill_draw_pile_if_empty {
                     let _ = deck.refill_draw_pile(); // No need to check for DiscardPileIsEmpty
                     Self::player_draws(player, deck, false)
@@ -138,7 +138,7 @@ impl Game {
         }
     }
 
-    fn get_player_action(&self, player: &Player) -> GameResult<GameAction> {
+    fn get_player_action(&self, player: &player::Player) -> GameResult<GameAction> {
         match get_user_turn_action() {
             UserAction::Draw => Ok(GameAction::PlayerDraw),
             UserAction::Play(i) => {
@@ -155,7 +155,7 @@ impl Game {
         }
     }
 
-    fn wait_for_player_action(&self, player: &Player) -> GameAction {
+    fn wait_for_player_action(&self, player: &player::Player) -> GameAction {
         loop {
             if let Ok(a) = self.get_player_action(player) {
                 break a;
@@ -195,7 +195,7 @@ impl Game {
     }
 
     pub fn new(num_of_players: usize, num_of_cards: usize) -> Self {
-        let players = (0..num_of_players).map(Player::new).collect();
+        let players = (0..num_of_players).map(player::Player::new).collect();
         Game {
             players,
             deck: deck::Deck::new(),

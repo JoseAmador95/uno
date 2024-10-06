@@ -1,9 +1,9 @@
 use crate::card::Card;
-use crate::deck::{Deck, Error};
+use crate::deck;
 
-type PlayerResult<T> = Result<T, PlayerError>;
+type PlayerResult<T> = Result<T, Error>;
 
-pub enum PlayerError {
+pub enum Error {
     IndexOutOfBounds,
     DrawPileIsEmpty,
     Unknown,
@@ -15,14 +15,14 @@ pub struct Player {
 }
 
 impl Player {
-    pub fn draw(&mut self, deck: &mut Deck) -> PlayerResult<()> {
+    pub fn draw(&mut self, deck: &mut deck::Deck) -> PlayerResult<()> {
         match deck.draw() {
             Ok(c) => {
                 self.hand.push(c);
                 Ok(())
             }
-            Err(Error::DrawPileIsEmpty) => Err(PlayerError::DrawPileIsEmpty),
-            Err(_) => Err(PlayerError::Unknown),
+            Err(deck::Error::DrawPileIsEmpty) => Err(Error::DrawPileIsEmpty),
+            Err(_) => Err(Error::Unknown),
         }
     }
 
@@ -31,7 +31,7 @@ impl Player {
             return Ok(self.hand.remove(index));
         }
 
-        Err(PlayerError::IndexOutOfBounds)
+        Err(Error::IndexOutOfBounds)
     }
 
     pub fn get_card(&self, index: usize) -> PlayerResult<&Card> {
@@ -39,7 +39,7 @@ impl Player {
             return Ok(c);
         }
 
-        Err(PlayerError::IndexOutOfBounds)
+        Err(Error::IndexOutOfBounds)
     }
 
     pub fn is_hand_empty(&self) -> bool {
