@@ -77,23 +77,17 @@ impl Game {
         num_of_cards: usize,
         card: &mut Card,
     ) {
-        match self.make_player_draw(next_player_index, num_of_cards) {
-            Ok(_) => {}
-            Err(Error::DrawPileIsEmpty) => {
-                todo!("There are not enough cards on the draw and discard piles to take two cards")
-            }
-            _ => {}
+        if let Err(Error::DrawPileIsEmpty) = self.make_player_draw(next_player_index, num_of_cards)
+        {
+            // There are not enough cards on the draw and discard piles to take two cards
         }
+
         Self::change_wild_color(card);
     }
 
     fn handle_draw_two(&mut self, next_player_index: usize) {
-        match self.make_player_draw(next_player_index, 2) {
-            Ok(_) => {}
-            Err(Error::DrawPileIsEmpty) => {
-                todo!("There are not enough cards on the draw and discard piles to take two cards")
-            }
-            _ => {}
+        if let Err(Error::DrawPileIsEmpty) = self.make_player_draw(next_player_index, 2) {
+            // There are not enough cards on the draw and discard piles to take two cards
         }
     }
 
@@ -106,7 +100,7 @@ impl Game {
             Value::WildDraw(n) => {
                 self.choose_colur_and_draw(self.get_next_player(player_index), n, card);
             }
-            _ => {}
+            Value::Number(_) => {}
         };
     }
 
@@ -140,7 +134,7 @@ impl Game {
                 // So might as well play whatever the player wants
                 true
             }
-            Err(_) => true,
+            Err(_) => unimplemented!(),
         }
     }
 
@@ -169,16 +163,16 @@ impl Game {
         }
     }
 
-    fn play_turn(&mut self, player_index: usize, action: GameAction) -> GameResult<GameAction> {
+    fn play_turn(&mut self, player_index: usize, action: &GameAction) -> GameResult<GameAction> {
         match action {
             GameAction::PlayerDraw => {
                 Self::player_draws(&mut self.players[player_index], &mut self.deck, true)
             }
             GameAction::PlayerPlaysCard(index) => {
-                if let Ok(mut card) = self.players[player_index].play_card(index) {
+                if let Ok(mut card) = self.players[player_index].play_card(*index) {
                     self.execute_card_action(player_index, &mut card);
                     self.deck.discard(card);
-                    Ok(GameAction::PlayerPlaysCard(index))
+                    Ok(GameAction::PlayerPlaysCard(*index))
                 } else {
                     Err(Error::Unknown)
                 }
@@ -189,9 +183,10 @@ impl Game {
     fn deal_cards_to_players(&mut self, num_of_cards: usize) {
         let num_of_players = self.players.len();
         for i in 0..num_of_players {
-            if self.make_player_draw(i, num_of_cards).is_err() {
-                panic!("Failed to deal cards at the start of the game");
-            }
+            assert!(
+                self.make_player_draw(i, num_of_cards).is_ok(),
+                "Failed to deal cards at the start of the game"
+            );
         }
     }
 
@@ -216,7 +211,7 @@ impl Game {
         let winner = loop {
             get_game_context(&self.players[self.player_index], &self.deck);
             let action = self.wait_for_player_action(&self.players[self.player_index]);
-            let _ = self.play_turn(self.player_index, action);
+            let _ = self.play_turn(self.player_index, &action);
             if self.has_player_won(self.player_index) {
                 break self.player_index;
             }
