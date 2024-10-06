@@ -10,7 +10,7 @@ pub enum Colour {
 }
 
 #[derive(Clone, Copy, PartialEq, Debug)]
-pub enum CardValue {
+pub enum Value {
     Reverse,
     Skip,
     DrawTwo,
@@ -22,7 +22,7 @@ pub enum CardValue {
 #[derive(Clone, Copy)]
 pub struct Card {
     pub colour: Colour,
-    pub value: CardValue,
+    pub value: Value,
 }
 
 impl std::fmt::Display for Card {
@@ -42,12 +42,12 @@ impl std::fmt::Display for Card {
             .normal(),
         };
         let value = match self.value {
-            CardValue::DrawTwo => "Draw Two".to_string(),
-            CardValue::Reverse => "Reverse".to_string(),
-            CardValue::Skip => "Skip".to_string(),
-            CardValue::Number(n) => n.to_string(),
-            CardValue::Wild => "Select Color".to_string(),
-            CardValue::WildDraw(n) => format!("Draw +{n}"),
+            Value::DrawTwo => "Draw Two".to_string(),
+            Value::Reverse => "Reverse".to_string(),
+            Value::Skip => "Skip".to_string(),
+            Value::Number(n) => n.to_string(),
+            Value::Wild => "Select Color".to_string(),
+            Value::WildDraw(n) => format!("Draw +{n}"),
         };
 
         write!(f, "{colour} {value}")

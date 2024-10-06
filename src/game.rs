@@ -1,4 +1,4 @@
-use crate::card::{Card, CardValue, Colour};
+use crate::card::{Card, Colour, Value};
 use crate::deck::{Deck, DeckError};
 use crate::player::{Player, PlayerError};
 use crate::ui::{
@@ -99,11 +99,11 @@ impl Game {
 
     fn execute_card_action(&mut self, player_index: usize, card: &mut Card) {
         match card.value {
-            CardValue::DrawTwo => self.handle_draw_two(self.get_next_player(player_index)),
-            CardValue::Skip => self.set_next_player(),
-            CardValue::Reverse => self.revese_direction(),
-            CardValue::Wild => self.change_wild_color(card),
-            CardValue::WildDraw(n) => {
+            Value::DrawTwo => self.handle_draw_two(self.get_next_player(player_index)),
+            Value::Skip => self.set_next_player(),
+            Value::Reverse => self.revese_direction(),
+            Value::Wild => self.change_wild_color(card),
+            Value::WildDraw(n) => {
                 self.choose_colur_and_draw(self.get_next_player(player_index), n, card);
             }
             _ => {}
