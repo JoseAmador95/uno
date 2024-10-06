@@ -14,7 +14,7 @@ The core components of the game are:
 4. **Game**: Manages the overall game flow, including the sequence of turns, direction of play, and special card effects.
 5. **UserAction**: Handles user input through the command-line interface (CLI), including selecting actions and colors for wildcards.
 
-## Mermaid Class Diagram
+## Class Diagram
 
 Below is a class diagram that illustrates the relationships between the major components in the game:
 
