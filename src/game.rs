@@ -9,7 +9,13 @@ type GameResult<T> = Result<T, GameError>;
 
 pub enum GameError {
     DrawPileIsEmpty,
+    InvalidPlay,
     Unknown,
+}
+
+enum GameAction {
+    PlayerDraw,
+    PlayerPlaysCard(usize),
 }
 
 pub fn check_game_attributes(num_of_players: usize, num_of_cards: usize) -> Result<(), String> {
@@ -37,9 +43,9 @@ impl Game {
         player: &mut Player,
         deck: &mut Deck,
         refill_draw_pile_if_empty: bool,
-    ) -> GameResult<()> {
+    ) -> GameResult<GameAction> {
         match player.draw(deck) {
-            Ok(_) => Ok(()),
+            Ok(_) => Ok(GameAction::PlayerDraw),
             Err(PlayerError::DrawPileIsEmpty) => {
                 if refill_draw_pile_if_empty {
                     let _ = deck.refill_draw_pile(); // No need to check for DiscardPileIsEmpty
@@ -138,22 +144,43 @@ impl Game {
         }
     }
 
-    fn play_turn(&mut self, player_index: usize) {
-        loop {
-            match get_user_turn_action() {
-                UserAction::Draw => {
-                    let _ =
-                        Self::player_draws(&mut self.players[player_index], &mut self.deck, true);
-                    break;
-                }
-                UserAction::Play(index) => {
-                    if let Ok(mut card) = self.players[player_index].play_card(index) {
-                        if self.is_valid_play(card) {
-                            self.execute_card_action(player_index, &mut card);
-                            self.deck.discard(card);
-                            break;
-                        }
+    fn get_player_action(&self, player: &Player) -> GameResult<GameAction> {
+        match get_user_turn_action() {
+            UserAction::Draw => Ok(GameAction::PlayerDraw),
+            UserAction::Play(i) => {
+                if let Ok(card) = player.get_card(i) {
+                    if self.is_valid_play(*card) {
+                        Ok(GameAction::PlayerPlaysCard(i))
+                    } else {
+                        Err(GameError::InvalidPlay)
                     }
+                } else {
+                    Err(GameError::InvalidPlay)
+                }
+            }
+        }
+    }
+
+    fn wait_for_player_action(&self, player: &Player) -> GameAction {
+        loop {
+            if let Ok(a) = self.get_player_action(player) {
+                break a;
+            }
+        }
+    }
+
+    fn play_turn(&mut self, player_index: usize, action: GameAction) -> GameResult<GameAction> {
+        match action {
+            GameAction::PlayerDraw => {
+                Self::player_draws(&mut self.players[player_index], &mut self.deck, true)
+            }
+            GameAction::PlayerPlaysCard(index) => {
+                if let Ok(mut card) = self.players[player_index].play_card(index) {
+                    self.execute_card_action(player_index, &mut card);
+                    self.deck.discard(card);
+                    Ok(GameAction::PlayerPlaysCard(index))
+                } else {
+                    Err(GameError::Unknown)
                 }
             }
         }
@@ -188,13 +215,11 @@ impl Game {
 
         let winner = loop {
             get_game_context(&self.players[self.player_index], &self.deck);
-
-            self.play_turn(self.player_index);
-
+            let action = self.wait_for_player_action(&self.players[self.player_index]);
+            let _ = self.play_turn(self.player_index, action);
             if self.has_player_won(self.player_index) {
                 break self.player_index;
             }
-
             self.set_next_player();
         };
 

@@ -34,6 +34,14 @@ impl Player {
         Err(PlayerError::IndexOutOfBounds)
     }
 
+    pub fn get_card(&self, index: usize) -> PlayerResult<&Card> {
+        if let Some(c) = self.hand.get(index) {
+            return Ok(c);
+        }
+
+        Err(PlayerError::IndexOutOfBounds)
+    }
+
     pub fn is_hand_empty(&self) -> bool {
         self.hand.is_empty()
     }
