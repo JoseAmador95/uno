@@ -1,4 +1,4 @@
-use crate::card::{Card, Colour, Value};
+use crate::card;
 use crate::deck;
 use crate::player;
 use crate::ui::{
@@ -66,7 +66,7 @@ impl Game {
         Ok(())
     }
 
-    fn change_wild_color(card: &mut Card) {
+    fn change_wild_color(card: &mut card::Card) {
         let colour = get_user_wild_colour();
         card.colour = colour;
     }
@@ -75,7 +75,7 @@ impl Game {
         &mut self,
         next_player_index: usize,
         num_of_cards: usize,
-        card: &mut Card,
+        card: &mut card::Card,
     ) {
         if let Err(Error::DrawPileIsEmpty) = self.make_player_draw(next_player_index, num_of_cards)
         {
@@ -91,16 +91,16 @@ impl Game {
         }
     }
 
-    fn execute_card_action(&mut self, player_index: usize, card: &mut Card) {
+    fn execute_card_action(&mut self, player_index: usize, card: &mut card::Card) {
         match card.value {
-            Value::DrawTwo => self.handle_draw_two(self.get_next_player(player_index)),
-            Value::Skip => self.set_next_player(),
-            Value::Reverse => self.revese_direction(),
-            Value::Wild => Self::change_wild_color(card),
-            Value::WildDraw(n) => {
+            card::Value::DrawTwo => self.handle_draw_two(self.get_next_player(player_index)),
+            card::Value::Skip => self.set_next_player(),
+            card::Value::Reverse => self.revese_direction(),
+            card::Value::Wild => Self::change_wild_color(card),
+            card::Value::WildDraw(n) => {
                 self.choose_colur_and_draw(self.get_next_player(player_index), n, card);
             }
-            Value::Number(_) => {}
+            card::Value::Number(_) => {}
         };
     }
 
@@ -121,13 +121,13 @@ impl Game {
         self.is_direction_ascending = !self.is_direction_ascending;
     }
 
-    fn is_valid_play(&self, card: &Card) -> bool {
+    fn is_valid_play(&self, card: &card::Card) -> bool {
         match self.deck.get_top_card() {
             Ok(card_on_top) => {
                 card.colour == card_on_top.colour
                     || card.value == card_on_top.value
-                    || card.colour == Colour::Wild
-                    || card_on_top.colour == Colour::Wild
+                    || card.colour == card::Colour::Wild
+                    || card_on_top.colour == card::Colour::Wild
             }
             Err(deck::Error::DiscardPileIsEmpty) => {
                 // There is no card on top of the discard pile (for some reason)
