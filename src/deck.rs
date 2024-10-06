@@ -3,9 +3,9 @@ use crate::default_deck::GAME_DECK;
 use rand::{seq::SliceRandom, thread_rng};
 use std::collections::VecDeque;
 
-type DeckResult<T> = Result<T, DeckError>;
+type DeckResult<T> = Result<T, Error>;
 
-pub enum DeckError {
+pub enum Error {
     DrawPileIsEmpty,
     DiscardPileIsEmpty,
 }
@@ -21,7 +21,7 @@ impl Deck {
             return Ok(c);
         }
 
-        Err(DeckError::DrawPileIsEmpty)
+        Err(Error::DrawPileIsEmpty)
     }
 
     pub fn discard(&mut self, card: Card) {
@@ -40,7 +40,7 @@ impl Deck {
             return Ok(c);
         }
 
-        Err(DeckError::DiscardPileIsEmpty)
+        Err(Error::DiscardPileIsEmpty)
     }
 
     pub fn refill_draw_pile(&mut self) -> DeckResult<()> {
@@ -52,7 +52,7 @@ impl Deck {
             return Ok(());
         }
 
-        Err(DeckError::DiscardPileIsEmpty)
+        Err(Error::DiscardPileIsEmpty)
     }
 
     fn discard_from_draw_pile(&mut self) -> DeckResult<()> {

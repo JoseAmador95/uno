@@ -1,5 +1,5 @@
 use crate::card::Card;
-use crate::deck::{Deck, DeckError};
+use crate::deck::{Deck, Error};
 
 type PlayerResult<T> = Result<T, PlayerError>;
 
@@ -21,7 +21,7 @@ impl Player {
                 self.hand.push(c);
                 Ok(())
             }
-            Err(DeckError::DrawPileIsEmpty) => Err(PlayerError::DrawPileIsEmpty),
+            Err(Error::DrawPileIsEmpty) => Err(PlayerError::DrawPileIsEmpty),
             Err(_) => Err(PlayerError::Unknown),
         }
     }

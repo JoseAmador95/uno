@@ -1,5 +1,5 @@
 use crate::card::{Card, Colour, Value};
-use crate::deck::{Deck, DeckError};
+use crate::deck::{Deck, Error};
 use crate::player::{Player, PlayerError};
 use crate::ui::{
     announce_winner, get_game_context, get_user_turn_action, get_user_wild_colour, UserAction,
@@ -135,7 +135,7 @@ impl Game {
                     || card.colour == Colour::Wild
                     || card_on_top.colour == Colour::Wild
             }
-            Err(DeckError::DiscardPileIsEmpty) => {
+            Err(Error::DiscardPileIsEmpty) => {
                 // There is no card on top of the discard pile (for some reason)
                 // So might as well play whatever the player wants
                 true
