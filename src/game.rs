@@ -127,7 +127,7 @@ impl Game {
         self.is_direction_ascending = !self.is_direction_ascending;
     }
 
-    fn is_valid_play(&self, card: Card) -> bool {
+    fn is_valid_play(&self, card: &Card) -> bool {
         match self.deck.get_top_card() {
             Ok(card_on_top) => {
                 card.colour == card_on_top.colour
@@ -149,7 +149,7 @@ impl Game {
             UserAction::Draw => Ok(GameAction::PlayerDraw),
             UserAction::Play(i) => {
                 if let Ok(card) = player.get_card(i) {
-                    if self.is_valid_play(*card) {
+                    if self.is_valid_play(card) {
                         Ok(GameAction::PlayerPlaysCard(i))
                     } else {
                         Err(GameError::InvalidPlay)
