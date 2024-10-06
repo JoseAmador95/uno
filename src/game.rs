@@ -91,7 +91,7 @@ impl Game {
         }
     }
 
-    fn player_turn(&mut self, player_index: usize, card: &mut Card) {
+    fn execute_card_action(&mut self, player_index: usize, card: &mut Card) {
         match card.value {
             CardValue::DrawTwo => self.handle_draw_two(self.get_next_player(player_index)),
             CardValue::Skip => self.set_next_player(),
@@ -102,7 +102,6 @@ impl Game {
             }
             _ => {}
         };
-        self.deck.discard(*card);
     }
 
     fn get_next_player(&self, current_player_index: usize) -> usize {
@@ -150,7 +149,8 @@ impl Game {
                 UserAction::Play(index) => {
                     if let Ok(mut card) = self.players[player_index].play_card(index) {
                         if self.is_valid_play(card) {
-                            self.player_turn(player_index, &mut card);
+                            self.execute_card_action(player_index, &mut card);
+                            self.deck.discard(card);
                             break;
                         }
                     }
