@@ -45,7 +45,7 @@ impl Game {
         refill_draw_pile_if_empty: bool,
     ) -> GameResult<GameAction> {
         match player.draw(deck) {
-            Ok(_) => Ok(GameAction::PlayerDraw),
+            Ok(()) => Ok(GameAction::PlayerDraw),
             Err(PlayerError::DrawPileIsEmpty) => {
                 if refill_draw_pile_if_empty {
                     let _ = deck.refill_draw_pile(); // No need to check for DiscardPileIsEmpty
