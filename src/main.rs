@@ -1,4 +1,4 @@
-use cli::parse_cli;
+use cli::parse_input;
 use game::{check_game_attributes, Game};
 
 mod card;
@@ -10,7 +10,7 @@ mod player;
 mod ui;
 
 fn main() -> Result<(), String> {
-    let args = parse_cli();
+    let args = parse_input();
     check_game_attributes(args.num_of_players, args.num_of_cards)?;
     let mut game = Game::new(args.num_of_players, args.num_of_cards);
     game.start_game();

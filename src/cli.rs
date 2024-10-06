@@ -22,6 +22,6 @@ pub struct Args {
     pub num_of_cards: usize,
 }
 
-pub fn parse_cli() -> Args {
+pub fn parse_input() -> Args {
     Args::parse_from(std::env::args())
 }
