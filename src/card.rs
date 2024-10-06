@@ -50,10 +50,6 @@ impl std::fmt::Display for Card {
             CardValue::WildDraw(n) => format!("Draw +{n}"),
         };
 
-        if colour.is_empty() {
-            write!(f, "{value}")
-        } else {
-            write!(f, "{colour} {value}")
-        }
+        write!(f, "{colour} {value}")
     }
 }
