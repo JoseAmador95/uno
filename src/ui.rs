@@ -8,13 +8,19 @@ pub enum UserAction {
     Play(usize),
 }
 
+fn clear_terminal() {
+    print!("{}[2J", 27 as char); // ANSI escape code to clear the terminal
+    print!("{}[H", 27 as char); // Move the cursor to the top-left corner
+}
+
 pub fn get_game_context(player: &Player, deck: &Deck) {
+    clear_terminal();
     println!("Player {player}'s turn", player = player.get_id());
     println!(
         "Number of cards in the draw pile: {}",
         deck.number_of_cards_in_draw_pile()
     );
-    if let Some(card) = deck.get_top_card() {
+    if let Ok(card) = deck.get_top_card() {
         println!("card on top: {card}");
     } else {
         print!("No card on top... somehow...")

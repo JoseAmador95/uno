@@ -1,9 +1,16 @@
 use crate::card::{Card, CardValue, Colour};
-use crate::deck::Deck;
-use crate::player::Player;
+use crate::deck::{Deck, DeckError};
+use crate::player::{Player, PlayerError};
 use crate::ui::{
     announce_winner, get_game_context, get_user_turn_action, get_user_wild_colour, UserAction,
 };
+
+type GameResult<T> = Result<T, GameError>;
+
+pub enum GameError {
+    DrawPileIsEmpty,
+    Unknown,
+}
 
 pub fn check_game_attributes(num_of_players: usize, num_of_cards: usize) -> Result<(), String> {
     if num_of_cards > 10 {
@@ -26,10 +33,31 @@ pub struct Game {
 }
 
 impl Game {
-    fn make_player_draw(&mut self, next_player_index: usize, num_of_cards: u8) {
-        for _ in 0..num_of_cards {
-            self.players[next_player_index].draw(&mut self.deck);
+    fn player_draws(
+        player: &mut Player,
+        deck: &mut Deck,
+        refill_draw_pile_if_empty: bool,
+    ) -> GameResult<()> {
+        match player.draw(deck) {
+            Ok(_) => Ok(()),
+            Err(PlayerError::DrawPileIsEmpty) => {
+                if refill_draw_pile_if_empty {
+                    let _ = deck.refill_draw_pile(); // No need to check for DiscardPileIsEmpty
+                    Self::player_draws(player, deck, false)
+                } else {
+                    Err(GameError::DrawPileIsEmpty)
+                }
+            }
+            _ => Err(GameError::Unknown),
         }
+    }
+
+    fn make_player_draw(&mut self, player_index: usize, num_of_cards: usize) -> GameResult<()> {
+        for _ in 0..num_of_cards {
+            Self::player_draws(&mut self.players[player_index], &mut self.deck, true)?;
+        }
+
+        Ok(())
     }
 
     fn change_wild_color(&mut self, card: &mut Card) {
@@ -40,21 +68,35 @@ impl Game {
     fn choose_colur_and_draw(
         &mut self,
         next_player_index: usize,
-        num_of_cards: u8,
+        num_of_cards: usize,
         card: &mut Card,
     ) {
-        self.make_player_draw(next_player_index, num_of_cards);
+        match self.make_player_draw(next_player_index, num_of_cards) {
+            Ok(_) => {}
+            Err(GameError::DrawPileIsEmpty) => {
+                todo!("There are not enough cards on the draw and discard piles to take two cards")
+            }
+            _ => {}
+        }
         self.change_wild_color(card);
+    }
+
+    fn handle_draw_two(&mut self, next_player_index: usize) {
+        match self.make_player_draw(next_player_index, 2) {
+            Ok(_) => {}
+            Err(GameError::DrawPileIsEmpty) => {
+                todo!("There are not enough cards on the draw and discard piles to take two cards")
+            }
+            _ => {}
+        }
     }
 
     fn player_turn(&mut self, player_index: usize, card: &mut Card) {
         match card.value {
-            CardValue::DrawTwo => self.make_player_draw(self.get_next_player(player_index), 2),
+            CardValue::DrawTwo => self.handle_draw_two(self.get_next_player(player_index)),
             CardValue::Skip => self.set_next_player(),
             CardValue::Reverse => self.revese_direction(),
-            CardValue::Wild => {
-                self.change_wild_color(card);
-            }
+            CardValue::Wild => self.change_wild_color(card),
             CardValue::WildDraw(n) => {
                 self.choose_colur_and_draw(self.get_next_player(player_index), n, card);
             }
@@ -81,15 +123,19 @@ impl Game {
     }
 
     fn is_valid_play(&self, card: Card) -> bool {
-        if let Some(card_on_top) = self.deck.get_top_card() {
-            card.colour == card_on_top.colour
-                || card.value == card_on_top.value
-                || card.colour == Colour::Wild
-                || card_on_top.colour == Colour::Wild
-        } else {
-            // There is no card on top of the discard pile (for some reason)
-            // So might as well play whatever the player wants
-            true
+        match self.deck.get_top_card() {
+            Ok(card_on_top) => {
+                card.colour == card_on_top.colour
+                    || card.value == card_on_top.value
+                    || card.colour == Colour::Wild
+                    || card_on_top.colour == Colour::Wild
+            }
+            Err(DeckError::DiscardPileIsEmpty) => {
+                // There is no card on top of the discard pile (for some reason)
+                // So might as well play whatever the player wants
+                true
+            }
+            Err(_) => true,
         }
     }
 
@@ -97,7 +143,8 @@ impl Game {
         loop {
             match get_user_turn_action() {
                 UserAction::Draw => {
-                    self.players[player_index].draw(&mut self.deck);
+                    let _ =
+                        Self::player_draws(&mut self.players[player_index], &mut self.deck, true);
                     break;
                 }
                 UserAction::Play(index) => {
@@ -115,8 +162,8 @@ impl Game {
     fn deal_cards_to_players(&mut self, num_of_cards: usize) {
         let num_of_players = self.players.len();
         for i in 0..num_of_players {
-            for _ in 0..num_of_cards {
-                self.players[i].draw(&mut self.deck);
+            if self.make_player_draw(i, num_of_cards).is_err() {
+                panic!("Failed to deal cards at the start of the game");
             }
         }
     }
@@ -146,10 +193,6 @@ impl Game {
 
             if self.has_player_won(self.player_index) {
                 break self.player_index;
-            }
-
-            if self.deck.draw_pile_is_empty() {
-                self.deck.refill_draw_pile();
             }
 
             self.set_next_player();

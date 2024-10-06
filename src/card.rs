@@ -14,9 +14,9 @@ pub enum CardValue {
     Reverse,
     Skip,
     DrawTwo,
-    Number(u8),
+    Number(usize),
     Wild,
-    WildDraw(u8),
+    WildDraw(usize),
 }
 
 #[derive(Clone, Copy)]
