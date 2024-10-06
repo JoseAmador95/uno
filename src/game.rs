@@ -66,7 +66,7 @@ impl Game {
         Ok(())
     }
 
-    fn change_wild_color(&mut self, card: &mut Card) {
+    fn change_wild_color(card: &mut Card) {
         let colour = get_user_wild_colour();
         card.colour = colour;
     }
@@ -84,7 +84,7 @@ impl Game {
             }
             _ => {}
         }
-        self.change_wild_color(card);
+        Self::change_wild_color(card);
     }
 
     fn handle_draw_two(&mut self, next_player_index: usize) {
@@ -102,7 +102,7 @@ impl Game {
             Value::DrawTwo => self.handle_draw_two(self.get_next_player(player_index)),
             Value::Skip => self.set_next_player(),
             Value::Reverse => self.revese_direction(),
-            Value::Wild => self.change_wild_color(card),
+            Value::Wild => Self::change_wild_color(card),
             Value::WildDraw(n) => {
                 self.choose_colur_and_draw(self.get_next_player(player_index), n, card);
             }
