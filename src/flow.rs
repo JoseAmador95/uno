@@ -9,6 +9,7 @@ enum GameState {
     ChooseColour,
     EndTurn,
     EndGame,
+    End,
 }
 
 pub struct GameFlow {
@@ -28,7 +29,7 @@ impl GameFlow {
         let mut continue_game = true;
         while continue_game {
             self.run_game_phase();
-            continue_game = !matches!(self.state, GameState::EndGame);
+            continue_game = !matches!(self.state, GameState::End);
         }
     }
 
@@ -41,6 +42,7 @@ impl GameFlow {
             GameState::ChooseColour => self.handle_choose_colour(),
             GameState::EndTurn => self.handle_end_turn(),
             GameState::EndGame => self.handle_end_game(),
+            GameState::End => GameState::End,
         };
     }
 
@@ -97,6 +99,6 @@ impl GameFlow {
     fn handle_end_game(&mut self) -> GameState {
         let player = self.game.get_current_player();
         ui::announce_winner(player);
-        GameState::EndGame
+        GameState::End
     }
 }
