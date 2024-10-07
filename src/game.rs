@@ -120,10 +120,6 @@ impl Game {
         }
     }
 
-    pub fn set_next_player(&mut self) {
-        self.player_index = self.get_next_player(self.player_index);
-    }
-
     fn revese_direction(&mut self) {
         self.is_direction_ascending = !self.is_direction_ascending;
     }
@@ -199,6 +195,10 @@ impl Game {
                 "Failed to deal cards at the start of the game"
             );
         }
+    }
+
+    pub fn set_next_player(&mut self) {
+        self.player_index = self.get_next_player(self.player_index);
     }
 
     pub fn has_player_won(&self, player_index: usize) -> bool {
