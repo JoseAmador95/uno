@@ -6,6 +6,7 @@ enum GameState {
     TurnStarts,
     GetPlayerAction,
     ExecutePlayerAction(game::GameAction),
+    ChooseColour,
     EndTurn,
     EndGame,
 }
@@ -37,6 +38,7 @@ impl GameFlow {
             GameState::TurnStarts => self.handle_turn_start(),
             GameState::GetPlayerAction => self.handle_get_player_action(),
             GameState::ExecutePlayerAction(action) => self.handle_execute_player_action(&action),
+            GameState::ChooseColour => self.handle_choose_colour(),
             GameState::EndTurn => self.handle_end_turn(),
             GameState::EndGame => self.handle_end_game(),
         };
@@ -56,13 +58,30 @@ impl GameFlow {
 
     fn handle_get_player_action(&mut self) -> GameState {
         let player = self.game.get_current_player();
-        let action = self.game.wait_for_player_action(player);
-        GameState::ExecutePlayerAction(action)
+        let action = self.game.get_player_action(player);
+        match action {
+            Ok(game::GameAction::PlayerDraw) => {
+                GameState::ExecutePlayerAction(game::GameAction::PlayerDraw)
+            }
+            Ok(game::GameAction::PlayerPlaysCard(i)) => {
+                GameState::ExecutePlayerAction(game::GameAction::PlayerPlaysCard(i))
+            }
+            _ => GameState::GetPlayerAction,
+        }
     }
 
     fn handle_execute_player_action(&mut self, action: &game::GameAction) -> GameState {
         let player = self.game.get_current_player();
-        let _ = self.game.execute_player_action(player.get_id(), action);
+        let action = self.game.execute_player_action(player.get_id(), action);
+        match action {
+            Ok(game::GameAction::ChooseColour) => GameState::ChooseColour,
+            _ => GameState::EndTurn,
+        }
+    }
+
+    fn handle_choose_colour(&mut self) -> GameState {
+        let colour = ui::get_user_wild_colour();
+        self.game.change_wild_color(&colour);
         GameState::EndTurn
     }
 

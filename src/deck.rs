@@ -1,4 +1,4 @@
-use crate::card::Card;
+use crate::card::{Card, Colour};
 use crate::default_deck::GAME_DECK;
 use rand::{seq::SliceRandom, thread_rng};
 use std::collections::VecDeque;
@@ -63,6 +63,12 @@ impl Deck {
 
     pub fn number_of_cards_in_draw_pile(&self) -> usize {
         self.draw_pile.len()
+    }
+
+    pub fn change_colour_of_top_card_in_discard(&mut self, colour: &Colour) {
+        if let Some(c) = self.discard_pile.back_mut() {
+            c.colour = *colour;
+        }
     }
 
     pub fn new() -> Self {

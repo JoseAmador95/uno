@@ -13,8 +13,10 @@ pub enum Error {
 
 #[derive(Clone, Copy)]
 pub enum GameAction {
+    None,
     PlayerDraw,
     PlayerPlaysCard(usize),
+    ChooseColour,
 }
 
 pub fn check_game_attributes(num_of_players: usize, num_of_cards: usize) -> Result<(), String> {
@@ -72,43 +74,53 @@ impl Game {
         Ok(())
     }
 
-    fn change_wild_color(card: &mut card::Card) {
-        let colour = ui::get_user_wild_colour();
-        card.colour = colour;
+    pub fn change_wild_color(&mut self, colour: &card::Colour) {
+        self.deck.change_colour_of_top_card_in_discard(colour);
     }
 
-    fn choose_colur_and_draw(
-        &mut self,
-        next_player_index: usize,
-        num_of_cards: usize,
-        card: &mut card::Card,
-    ) {
+    fn handle_wild_draw(&mut self, next_player_index: usize, num_of_cards: usize) -> GameAction {
         if let Err(Error::DrawPileIsEmpty) =
             self.player_draws_multiple(next_player_index, num_of_cards)
         {
             // There are not enough cards on the draw and discard piles to take two cards
         }
 
-        Self::change_wild_color(card);
+        self.handle_wild()
     }
 
-    fn handle_draw_two(&mut self, next_player_index: usize) {
+    fn handle_wild(&mut self) -> GameAction {
+        // Self::change_wild_color(card);
+        GameAction::ChooseColour
+    }
+
+    fn handle_reverse(&mut self) -> GameAction {
+        self.revese_direction();
+        GameAction::None
+    }
+
+    fn handle_skip(&mut self) -> GameAction {
+        self.set_next_player();
+        GameAction::None
+    }
+
+    fn handle_draw_two(&mut self, next_player_index: usize) -> GameAction {
         if let Err(Error::DrawPileIsEmpty) = self.player_draws_multiple(next_player_index, 2) {
             // There are not enough cards on the draw and discard piles to take two cards
         }
+        GameAction::None
     }
 
-    fn execute_card_action(&mut self, player_index: usize, card: &mut card::Card) {
+    fn execute_card_action(&mut self, player_index: usize, card: &mut card::Card) -> GameAction {
         match card.value {
             card::Value::DrawTwo => self.handle_draw_two(self.get_next_player(player_index)),
-            card::Value::Skip => self.set_next_player(),
-            card::Value::Reverse => self.revese_direction(),
-            card::Value::Wild => Self::change_wild_color(card),
+            card::Value::Skip => self.handle_skip(),
+            card::Value::Reverse => self.handle_reverse(),
+            card::Value::Wild => self.handle_wild(),
             card::Value::WildDraw(n) => {
-                self.choose_colur_and_draw(self.get_next_player(player_index), n, card);
+                self.handle_wild_draw(self.get_next_player(player_index), n)
             }
-            card::Value::Number(_) => {}
-        };
+            card::Value::Number(_) => GameAction::None,
+        }
     }
 
     fn get_next_player(&self, current_player_index: usize) -> usize {
@@ -141,7 +153,7 @@ impl Game {
         }
     }
 
-    fn get_player_action(&self, player: &player::Player) -> GameResult<GameAction> {
+    pub fn get_player_action(&self, player: &player::Player) -> GameResult<GameAction> {
         match ui::get_user_turn_action() {
             ui::UserAction::Draw => Ok(GameAction::PlayerDraw),
             ui::UserAction::Play(i) => {
@@ -158,14 +170,6 @@ impl Game {
         }
     }
 
-    pub fn wait_for_player_action(&self, player: &player::Player) -> GameAction {
-        loop {
-            if let Ok(a) = self.get_player_action(player) {
-                break a;
-            }
-        }
-    }
-
     pub fn execute_player_action(
         &mut self,
         player_index: usize,
@@ -177,13 +181,14 @@ impl Game {
             }
             GameAction::PlayerPlaysCard(index) => {
                 if let Ok(mut card) = self.players[player_index].play_card(*index) {
-                    self.execute_card_action(player_index, &mut card);
+                    let result = self.execute_card_action(player_index, &mut card);
                     self.deck.discard(card);
-                    Ok(GameAction::PlayerPlaysCard(*index))
+                    Ok(result)
                 } else {
                     Err(Error::Unknown)
                 }
             }
+            _ => Ok(GameAction::None),
         }
     }
 
@@ -222,21 +227,5 @@ impl Game {
             is_flow_clockwise: true,
             num_of_cards,
         }
-    }
-
-    pub fn start_game(&mut self) {
-        self.deal_cards_to_players();
-
-        let winner = loop {
-            ui::get_game_context(&self.players[self.player_index], &self.deck);
-            let action = self.wait_for_player_action(&self.players[self.player_index]);
-            let _ = self.execute_player_action(self.player_index, &action);
-            if self.has_player_won(self.player_index) {
-                break self.player_index;
-            }
-            self.set_next_player();
-        };
-
-        ui::announce_winner(&self.players[winner]);
     }
 }
