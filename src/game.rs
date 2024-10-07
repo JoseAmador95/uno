@@ -13,7 +13,8 @@ pub enum Error {
     Unknown,
 }
 
-enum GameAction {
+#[derive(Clone, Copy)]
+pub enum GameAction {
     PlayerDraw,
     PlayerPlaysCard(usize),
 }
@@ -113,7 +114,7 @@ impl Game {
         }
     }
 
-    fn set_next_player(&mut self) {
+    pub fn set_next_player(&mut self) {
         self.player_index = self.get_next_player(self.player_index);
     }
 
@@ -155,7 +156,7 @@ impl Game {
         }
     }
 
-    fn wait_for_player_action(&self, player: &player::Player) -> GameAction {
+    pub fn wait_for_player_action(&self, player: &player::Player) -> GameAction {
         loop {
             if let Ok(a) = self.get_player_action(player) {
                 break a;
@@ -163,7 +164,11 @@ impl Game {
         }
     }
 
-    fn play_turn(&mut self, player_index: usize, action: &GameAction) -> GameResult<GameAction> {
+    pub fn play_turn(
+        &mut self,
+        player_index: usize,
+        action: &GameAction,
+    ) -> GameResult<GameAction> {
         match action {
             GameAction::PlayerDraw => {
                 Self::player_draws(&mut self.players[player_index], &mut self.deck, true)
@@ -180,18 +185,26 @@ impl Game {
         }
     }
 
-    fn deal_cards_to_players(&mut self, num_of_cards: usize) {
+    pub fn deal_cards_to_players(&mut self) {
         let num_of_players = self.players.len();
         for i in 0..num_of_players {
             assert!(
-                self.make_player_draw(i, num_of_cards).is_ok(),
+                self.make_player_draw(i, self.num_of_cards).is_ok(),
                 "Failed to deal cards at the start of the game"
             );
         }
     }
 
-    fn has_player_won(&self, player_index: usize) -> bool {
+    pub fn has_player_won(&self, player_index: usize) -> bool {
         self.players[player_index].is_hand_empty()
+    }
+
+    pub fn get_deck(&self) -> &deck::Deck {
+        &self.deck
+    }
+
+    pub fn get_current_player(&self) -> &player::Player {
+        &self.players[self.player_index]
     }
 
     pub fn new(num_of_players: usize, num_of_cards: usize) -> Self {
@@ -206,7 +219,7 @@ impl Game {
     }
 
     pub fn start_game(&mut self) {
-        self.deal_cards_to_players(self.num_of_cards);
+        self.deal_cards_to_players();
 
         let winner = loop {
             get_game_context(&self.players[self.player_index], &self.deck);
