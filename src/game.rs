@@ -38,28 +38,35 @@ pub struct Game {
 }
 
 impl Game {
-    fn player_draws(
+    fn player_draws(player: &mut player::Player, deck: &mut deck::Deck) -> GameResult<GameAction> {
+        match player.draw(deck) {
+            Ok(()) => Ok(GameAction::PlayerDraw),
+            Err(player::Error::DrawPileIsEmpty) => Err(Error::DrawPileIsEmpty),
+            _ => Err(Error::Unknown),
+        }
+    }
+
+    fn player_draws_with_pile_check(
         player: &mut player::Player,
         deck: &mut deck::Deck,
-        refill_draw_pile_if_empty: bool,
     ) -> GameResult<GameAction> {
         match player.draw(deck) {
             Ok(()) => Ok(GameAction::PlayerDraw),
             Err(player::Error::DrawPileIsEmpty) => {
-                if refill_draw_pile_if_empty {
-                    let _ = deck.refill_draw_pile(); // No need to check for DiscardPileIsEmpty
-                    Self::player_draws(player, deck, false)
-                } else {
-                    Err(Error::DrawPileIsEmpty)
-                }
+                let _ = deck.refill_draw_pile(); // No need to check for DiscardPileIsEmpty
+                Self::player_draws(player, deck)
             }
             _ => Err(Error::Unknown),
         }
     }
 
-    fn make_player_draw(&mut self, player_index: usize, num_of_cards: usize) -> GameResult<()> {
+    fn player_draws_multiple(
+        &mut self,
+        player_index: usize,
+        num_of_cards: usize,
+    ) -> GameResult<()> {
         for _ in 0..num_of_cards {
-            Self::player_draws(&mut self.players[player_index], &mut self.deck, true)?;
+            Self::player_draws_with_pile_check(&mut self.players[player_index], &mut self.deck)?;
         }
 
         Ok(())
@@ -76,7 +83,8 @@ impl Game {
         num_of_cards: usize,
         card: &mut card::Card,
     ) {
-        if let Err(Error::DrawPileIsEmpty) = self.make_player_draw(next_player_index, num_of_cards)
+        if let Err(Error::DrawPileIsEmpty) =
+            self.player_draws_multiple(next_player_index, num_of_cards)
         {
             // There are not enough cards on the draw and discard piles to take two cards
         }
@@ -85,7 +93,7 @@ impl Game {
     }
 
     fn handle_draw_two(&mut self, next_player_index: usize) {
-        if let Err(Error::DrawPileIsEmpty) = self.make_player_draw(next_player_index, 2) {
+        if let Err(Error::DrawPileIsEmpty) = self.player_draws_multiple(next_player_index, 2) {
             // There are not enough cards on the draw and discard piles to take two cards
         }
     }
@@ -169,7 +177,7 @@ impl Game {
     ) -> GameResult<GameAction> {
         match action {
             GameAction::PlayerDraw => {
-                Self::player_draws(&mut self.players[player_index], &mut self.deck, true)
+                Self::player_draws_with_pile_check(&mut self.players[player_index], &mut self.deck)
             }
             GameAction::PlayerPlaysCard(index) => {
                 if let Ok(mut card) = self.players[player_index].play_card(*index) {
@@ -187,7 +195,7 @@ impl Game {
         let num_of_players = self.players.len();
         for i in 0..num_of_players {
             assert!(
-                self.make_player_draw(i, self.num_of_cards).is_ok(),
+                self.player_draws_multiple(i, self.num_of_cards).is_ok(),
                 "Failed to deal cards at the start of the game"
             );
         }
