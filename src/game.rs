@@ -170,7 +170,7 @@ impl Game {
         }
     }
 
-    pub fn play_turn(
+    pub fn execute_player_action(
         &mut self,
         player_index: usize,
         action: &GameAction,
@@ -230,7 +230,7 @@ impl Game {
         let winner = loop {
             ui::get_game_context(&self.players[self.player_index], &self.deck);
             let action = self.wait_for_player_action(&self.players[self.player_index]);
-            let _ = self.play_turn(self.player_index, &action);
+            let _ = self.execute_player_action(self.player_index, &action);
             if self.has_player_won(self.player_index) {
                 break self.player_index;
             }

@@ -62,7 +62,7 @@ impl GameFlow {
 
     fn handle_execute_player_action(&mut self, action: &game::GameAction) -> GameState {
         let player = self.game.get_current_player();
-        let _ = self.game.play_turn(player.get_id(), action);
+        let _ = self.game.execute_player_action(player.get_id(), action);
         GameState::EndTurn
     }
 
