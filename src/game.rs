@@ -1,9 +1,7 @@
 use crate::card;
 use crate::deck;
 use crate::player;
-use crate::ui::{
-    announce_winner, get_game_context, get_user_turn_action, get_user_wild_colour, UserAction,
-};
+use crate::ui;
 
 type GameResult<T> = Result<T, Error>;
 
@@ -68,7 +66,7 @@ impl Game {
     }
 
     fn change_wild_color(card: &mut card::Card) {
-        let colour = get_user_wild_colour();
+        let colour = ui::get_user_wild_colour();
         card.colour = colour;
     }
 
@@ -140,9 +138,9 @@ impl Game {
     }
 
     fn get_player_action(&self, player: &player::Player) -> GameResult<GameAction> {
-        match get_user_turn_action() {
-            UserAction::Draw => Ok(GameAction::PlayerDraw),
-            UserAction::Play(i) => {
+        match ui::get_user_turn_action() {
+            ui::UserAction::Draw => Ok(GameAction::PlayerDraw),
+            ui::UserAction::Play(i) => {
                 if let Ok(card) = player.get_card(i) {
                     if self.is_valid_play(card) {
                         Ok(GameAction::PlayerPlaysCard(i))
@@ -222,7 +220,7 @@ impl Game {
         self.deal_cards_to_players();
 
         let winner = loop {
-            get_game_context(&self.players[self.player_index], &self.deck);
+            ui::get_game_context(&self.players[self.player_index], &self.deck);
             let action = self.wait_for_player_action(&self.players[self.player_index]);
             let _ = self.play_turn(self.player_index, &action);
             if self.has_player_won(self.player_index) {
@@ -231,6 +229,6 @@ impl Game {
             self.set_next_player();
         };
 
-        announce_winner(&self.players[winner]);
+        ui::announce_winner(&self.players[winner]);
     }
 }
