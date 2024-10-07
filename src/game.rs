@@ -33,7 +33,7 @@ pub struct Game {
     players: Vec<player::Player>,
     deck: deck::Deck,
     player_index: usize,
-    is_direction_ascending: bool,
+    is_flow_clockwise: bool,
     num_of_cards: usize,
 }
 
@@ -112,16 +112,16 @@ impl Game {
     }
 
     fn get_next_player(&self, current_player_index: usize) -> usize {
-        if !self.is_direction_ascending && current_player_index == 0 {
+        if !self.is_flow_clockwise && current_player_index == 0 {
             self.players.len() - 1
         } else {
-            let index_increment: isize = if self.is_direction_ascending { 1 } else { -1 };
+            let index_increment: isize = if self.is_flow_clockwise { 1 } else { -1 };
             (current_player_index.wrapping_add_signed(index_increment)) % self.players.len()
         }
     }
 
     fn revese_direction(&mut self) {
-        self.is_direction_ascending = !self.is_direction_ascending;
+        self.is_flow_clockwise = !self.is_flow_clockwise;
     }
 
     fn is_valid_play(&self, card: &card::Card) -> bool {
@@ -219,7 +219,7 @@ impl Game {
             players,
             deck: deck::Deck::new(),
             player_index: 0,
-            is_direction_ascending: true,
+            is_flow_clockwise: true,
             num_of_cards,
         }
     }
