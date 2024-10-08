@@ -153,8 +153,12 @@ impl Game {
         }
     }
 
-    pub fn get_player_action(&self, player: &player::Player) -> GameResult<GameAction> {
-        match ui::get_user_turn_action() {
+    pub fn get_player_action(
+        &self,
+        player: &player::Player,
+        action: ui::UserAction,
+    ) -> GameResult<GameAction> {
+        match action {
             ui::UserAction::Draw => Ok(GameAction::PlayerDraw),
             ui::UserAction::Play(i) => {
                 if let Ok(card) = player.get_card(i) {

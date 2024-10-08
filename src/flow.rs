@@ -1,3 +1,4 @@
+use crate::ai;
 use crate::game;
 use crate::ui;
 
@@ -54,14 +55,20 @@ impl GameFlow {
     fn handle_turn_start(&mut self) -> GameState {
         let player = self.game.get_current_player();
         let deck = self.game.get_deck();
-        ui::get_game_context(player, deck);
+        if player.get_id() == 0 {
+            ui::get_game_context(player, deck);
+        }
         GameState::GetPlayerAction
     }
 
     fn handle_get_player_action(&mut self) -> GameState {
         let player = self.game.get_current_player();
-        let action = self.game.get_player_action(player);
-        match action {
+        let action = if player.get_id() == 0 {
+            ui::get_user_turn_action()
+        } else {
+            ai::get_ai_turn_action(player)
+        };
+        match self.game.get_player_action(player, action) {
             Ok(game::GameAction::PlayerDraw) => {
                 GameState::ExecutePlayerAction(game::GameAction::PlayerDraw)
             }
@@ -82,7 +89,12 @@ impl GameFlow {
     }
 
     fn handle_choose_colour(&mut self) -> GameState {
-        let colour = ui::get_user_wild_colour();
+        let player = self.game.get_current_player();
+        let colour = if player.get_id() == 0 {
+            ui::get_user_wild_colour()
+        } else {
+            ai::choose_colour(player)
+        };
         self.game.change_wild_color(&colour);
         GameState::EndTurn
     }
@@ -92,6 +104,7 @@ impl GameFlow {
         if self.game.has_player_won(player.get_id()) {
             return GameState::EndGame;
         }
+        ai::reset_ai();
         self.game.set_next_player();
         GameState::TurnStarts
     }

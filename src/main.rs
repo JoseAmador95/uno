@@ -1,6 +1,7 @@
 use cli::parse_input;
 use game::check_game_attributes;
 
+mod ai;
 mod card;
 mod cli;
 mod deck;

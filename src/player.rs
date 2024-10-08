@@ -27,7 +27,7 @@ impl Player {
     }
 
     pub fn play_card(&mut self, index: usize) -> PlayerResult<Card> {
-        if index < self.hand.len() {
+        if index < self.get_number_of_cards() {
             return Ok(self.hand.remove(index));
         }
 
@@ -48,6 +48,14 @@ impl Player {
 
     pub fn get_id(&self) -> usize {
         self.id
+    }
+
+    pub fn get_number_of_cards(&self) -> usize {
+        self.hand.len()
+    }
+
+    pub fn get_hand(&self) -> &Vec<Card> {
+        &self.hand
     }
 
     pub fn print_hand(&self) {
