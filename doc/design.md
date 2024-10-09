@@ -13,6 +13,8 @@ The core components of the game are:
 3. **Player**: Each player holds a hand of cards and can perform actions like drawing and playing cards.
 4. **Game**: Manages the overall game flow, including the sequence of turns, direction of play, and special card effects.
 5. **UserAction**: Handles user input through the command-line interface (CLI), including selecting actions and colors for wildcards.
+6. **AI**: Manages the actions of AI players.
+7. **GameFlow**: Controls the state transitions and phases of the game.
 
 ## Class Diagram
 
@@ -35,9 +37,9 @@ classDiagram
       Reverse
       Skip
       DrawTwo
-      Number : u8
+      Number : usize
       Wild
-      WildDraw : u8
+      WildDraw : usize
     }
 
     class Card {
@@ -46,100 +48,105 @@ classDiagram
     }
 
     class Deck {
-      + Vec~Card~ draw_pile
-      + Vec~Card~ discard_pile
-      + draw() Option~Card~
-      + discard(card: Card)
-      + shuffle()
-      + get_top_card() Option~Card~
-      + refill_draw_pile()
-      + draw_pile_is_empty() bool
+      + VecDeque<Card> draw_pile
+      + VecDeque<Card> discard_pile
+      + fn draw() -> Result<Card, Error>
+      + fn discard(card: Card)
+      + fn shuffle()
+      + fn get_top_card() -> Result<&Card, Error>
+      + fn refill_draw_pile() -> Result<()>
+      + fn number_of_cards_in_draw_pile() -> usize
+      + fn change_colour_of_top_card_in_discard(colour: &Colour)
     }
 
     class Player {
       + usize id
-      + Vec~Card~ hand
-      + draw(deck: Deck) Option~Card~
-      + play_card(card_index: usize) Card
+      + Vec<Card> hand
+      + fn draw(deck: &mut Deck) -> Result<(), Error>
+      + fn play_card(index: usize) -> Result<Card, Error>
+      + fn get_card(index: usize) -> Result<&Card, Error>
+      + fn is_hand_empty() -> bool
+      + fn get_id() -> usize
+      + fn get_number_of_cards() -> usize
+      + fn get_hand() -> &Vec<Card>
+      + fn print_hand()
+      + fn new(id: usize) -> Self
     }
 
     class Game {
-      + Vec~Player~ players
+      + Vec<Player> players
       + Deck deck
       + usize player_index
-      + bool is_direction_ascending
-      + num_of_cards: usize
-      + make_player_draw(next_player_index: usize, num_of_cards: u8)
-      + play_turn(player: Player, card_index: usize) bool
-      + reverse_direction()
+      + bool is_flow_clockwise
+      + usize num_of_cards
+      + fn change_wild_color(colour: &Colour)
+      + fn get_player_action(player: &Player, action: UserAction) -> Result<GameAction, Error>
+      + fn execute_player_action(action: &GameAction) -> Result<GameAction, Error>
+      + fn deal_cards_to_players()
+      + fn set_next_player()
+      + fn has_player_won(player_index: usize) -> bool
+      + fn get_deck() -> &Deck
+      + fn get_current_player() -> &Player
+      + fn new(num_of_players: usize, num_of_cards: usize) -> Self
     }
 
     class UserAction {
-      + get_game_context() GameContext
-      + get_user_turn_action() UserAction
-      + get_user_wild_colour() Colour
-      + announce_winner(player: Player) void
+      <<enumeration>>
+      Draw
+      Play(usize)
     }
 
-    Card --> Colour : has
-    Card --> CardValue : has
-    Deck --> Card : contains
-    Player --> Card : holds
-    Player --> Deck : interacts
-    Game --> Player : contains
-    Game --> Deck : uses
-    Game --> UserAction : interacts
+    class GameAction {
+      <<enumeration>>
+      None
+      PlayerDraw
+      PlayerPlaysCard(usize)
+      ChooseColour
+    }
+
+    class GameFlow {
+      + Game game
+      + GameState state
+      + fn new(num_of_players: usize, num_of_cards: usize) -> Self
+      + fn start_game()
+      + fn run_game_phase()
+      + fn handle_init() -> GameState
+      + fn handle_turn_start() -> GameState
+      + fn handle_get_player_action() -> GameState
+      + fn handle_execute_player_action(action: &GameAction) -> GameState
+      + fn handle_choose_colour() -> GameState
+      + fn handle_end_turn() -> GameState
+      + fn handle_end_game() -> GameState
+    }
+
+    class GameState {
+      <<enumeration>>
+      Init
+      TurnStarts
+      GetPlayerAction
+      ExecutePlayerAction(GameAction)
+      ChooseColour
+      EndTurn
+      EndGame
+      End
+    }
+
+    class Ai {
+      + usize next_card_to_play
+      + fn get_ai_turn_action(player: &Player) -> UserAction
+      + fn reset_ai()
+      + fn choose_colour(player: &Player) -> Colour
+    }
+
+    Colour --> Card
+    CardValue --> Card
+    Card --> Deck
+    Card --> Player
+    Player --> Game
+    Deck --> Game
+    UserAction --> Game
+    GameAction --> Game
+    Game --> GameFlow
+    GameState --> GameFlow
+    Ai --> GameFlow
 ```
-
-## Detailed Components
-
-### Card
-
-The `Card` struct represents a card in the game and contains:
-- `colour`: A `Colour` enum representing the color of the card (Red, Yellow, Green, Blue, Wild).
-- `value`: A `CardValue` enum representing the type of card (e.g., `Reverse`, `Skip`, `DrawTwo`, `Number(u8)`, `Wild`, or `WildDraw(u8)`).
-
-### Deck
-
-The `Deck` struct manages the deck of cards. It contains two piles:
-- `draw_pile`: A vector (`Vec<Card>`) representing the remaining deck from which players draw cards.
-- `discard_pile`: A vector (`Vec<Card>`) representing the pile where played cards are discarded.
-
-Key methods include:
-- `draw()`: Returns an `Option<Card>` by popping a card from the draw pile.
-- `discard(card: Card)`: Adds a card to the discard pile.
-- `shuffle()`: Shuffles the draw pile.
-- `get_top_card()`: Returns the top card from the discard pile.
-- `refill_draw_pile()`: Refills the draw pile from the discard pile if the draw pile is empty.
-
-### Player
-
-The `Player` struct represents a player in the game. Each player has:
-- `id`: A unique identifier (`usize`).
-- `hand`: A vector (`Vec<Card>`) representing the player's hand of cards.
-
-Key methods include:
-- `draw(deck: Deck)`: Draws a card from the deck.
-- `play_card(card_index: usize)`: Plays a card from the player's hand by providing the index of the card.
-
-### Game
-
-The `Game` struct manages the game flow, including the sequence of turns and the direction of play. It contains:
-- `players`: A vector (`Vec<Player>`) of players in the game.
-- `deck`: The game’s deck of cards (`Deck`).
-- `player_index`: The index of the current player (`usize`).
-- `is_direction_ascending`: A boolean indicating the direction of play (clockwise or counterclockwise).
-- `num_of_cards`: The number of cards each player starts with.
-
-Key methods include:
-- `make_player_draw(next_player_index: usize, num_of_cards: u8)`: Makes a player draw multiple cards.
-- `play_turn(player: Player, card_index: usize)`: Executes a player's turn and returns a boolean indicating whether the move was valid.
-- `reverse_direction()`: Reverses the direction of play by toggling `is_direction_ascending`.
-
-### UserAction
-
-The `UserAction` struct manages user interactions via the CLI, handling input for various game actions and events. Key methods include:
-- `get_game_context()`: Retrieves the game context or state.
-- `get_user_turn_action()`: Retrieves the user’s chosen action (play a card, draw a card, etc.).
-- `get_user_wild_colour()`: Retrieves the chosen color when a wild card is played.
-- `announce_winner(player: Player)`: Announces the winner of the game.
