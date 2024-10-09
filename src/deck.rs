@@ -1,4 +1,4 @@
-use crate::card::{Card, Colour};
+use crate::card;
 use crate::default_deck::GAME_DECK;
 use rand::{seq::SliceRandom, thread_rng};
 use std::collections::VecDeque;
@@ -11,12 +11,12 @@ pub enum Error {
 }
 
 pub struct Deck {
-    draw_pile: VecDeque<Card>,
-    discard_pile: VecDeque<Card>,
+    draw_pile: VecDeque<card::Card>,
+    discard_pile: VecDeque<card::Card>,
 }
 
 impl Deck {
-    pub fn draw(&mut self) -> DeckResult<Card> {
+    pub fn draw(&mut self) -> DeckResult<card::Card> {
         if let Some(c) = self.draw_pile.pop_front() {
             return Ok(c);
         }
@@ -24,18 +24,18 @@ impl Deck {
         Err(Error::DrawPileIsEmpty)
     }
 
-    pub fn discard(&mut self, card: Card) {
+    pub fn discard(&mut self, card: card::Card) {
         self.discard_pile.push_back(card);
     }
 
     fn shuffle(&mut self) {
         let mut rng = thread_rng();
-        let mut card_vec: Vec<Card> = self.draw_pile.drain(..).collect();
+        let mut card_vec: Vec<card::Card> = self.draw_pile.drain(..).collect();
         card_vec.shuffle(&mut rng);
         self.draw_pile = VecDeque::from(card_vec);
     }
 
-    pub fn get_top_card(&self) -> DeckResult<&Card> {
+    pub fn get_top_card(&self) -> DeckResult<&card::Card> {
         if let Some(c) = self.discard_pile.back() {
             return Ok(c);
         }
@@ -44,15 +44,25 @@ impl Deck {
     }
 
     pub fn refill_draw_pile(&mut self) -> DeckResult<()> {
-        if let Some(c) = self.discard_pile.pop_back() {
+        if let Some(card) = self.discard_pile.pop_back() {
+            self.rever_wild_cards_in_discard_pile();
             self.draw_pile.append(&mut self.discard_pile);
             self.discard_pile.clear();
             self.shuffle();
-            self.discard(c);
+            self.discard(card);
             return Ok(());
         }
 
         Err(Error::DiscardPileIsEmpty)
+    }
+
+    fn rever_wild_cards_in_discard_pile(&mut self) {
+        let _ = self
+            .discard_pile
+            .iter_mut()
+            .filter(|card| matches!(card.value, card::Value::Wild | card::Value::WildDraw(_)))
+            .map(|card| card.colour = card::Colour::Wild)
+            .collect::<Vec<_>>();
     }
 
     fn discard_from_draw_pile(&mut self) -> DeckResult<()> {
@@ -65,7 +75,7 @@ impl Deck {
         self.draw_pile.len()
     }
 
-    pub fn change_colour_of_top_card_in_discard(&mut self, colour: &Colour) {
+    pub fn change_colour_of_top_card_in_discard(&mut self, colour: &card::Colour) {
         if let Some(c) = self.discard_pile.back_mut() {
             c.colour = *colour;
         }
