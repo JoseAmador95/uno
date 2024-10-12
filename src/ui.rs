@@ -37,7 +37,7 @@ fn clear_terminal() {
     print!("{}[H", 27 as char); // Move the cursor to the top-left corner
 }
 
-pub fn get_game_context(player: &player::Player, deck: &deck::Deck) {
+pub fn get_game_context(player: &player::Player, deck: &impl deck::DeckTrait) {
     clear_terminal();
     println!("Player {player}'s turn", player = player.get_id());
     println!(

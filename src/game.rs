@@ -1,6 +1,7 @@
 use crate::actor;
 use crate::card;
 use crate::deck;
+use crate::deck::DeckTrait;
 use crate::player;
 
 type GameResult<T> = Result<T, Error>;
@@ -40,7 +41,10 @@ pub struct Game {
 }
 
 impl Game {
-    fn player_draws(player: &mut player::Player, deck: &mut deck::Deck) -> GameResult<GameAction> {
+    fn player_draws(
+        player: &mut player::Player,
+        deck: &mut impl deck::DeckTrait,
+    ) -> GameResult<GameAction> {
         match player.draw(deck) {
             Ok(()) => Ok(GameAction::PlayerDraw),
             Err(player::Error::DrawPileIsEmpty) => Err(Error::DrawPileIsEmpty),
@@ -50,7 +54,7 @@ impl Game {
 
     fn player_draws_with_pile_check(
         player: &mut player::Player,
-        deck: &mut deck::Deck,
+        deck: &mut impl deck::DeckTrait,
     ) -> GameResult<GameAction> {
         match player.draw(deck) {
             Ok(()) => Ok(GameAction::PlayerDraw),

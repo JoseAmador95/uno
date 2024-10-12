@@ -15,7 +15,7 @@ pub struct Player {
 }
 
 impl Player {
-    pub fn draw(&mut self, deck: &mut deck::Deck) -> PlayerResult<()> {
+    pub fn draw(&mut self, deck: &mut impl deck::DeckTrait) -> PlayerResult<()> {
         match deck.draw() {
             Ok(c) => {
                 self.hand.push(c);
