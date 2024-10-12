@@ -1,6 +1,6 @@
 use clap::Parser;
 
-const ABOUT:&str= "Uno is the highly popular card game played by millions around the globe. This game is played by matching and then discarding the cards in one’s hand untill none are left.";
+const ABOUT:&str= "Uno is the highly popular card game played by millions around the globe. This game is played by matching and then discarding the cards in one’s hand until none are left.";
 
 #[derive(Parser)]
 #[command(version, about, long_about = ABOUT)]
