@@ -6,4 +6,5 @@ edition = "2021"
 [dependencies]
 clap = { version = "4.5.19", features = ["derive"] }
 colored = "2.1.0"
+mockall = "0.13.0"
 rand = "0.8.5"

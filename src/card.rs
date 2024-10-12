@@ -1,6 +1,6 @@
 use colored::Colorize;
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Colour {
     Red,
     Yellow,
@@ -19,7 +19,7 @@ pub enum Value {
     WildDraw(usize),
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Card {
     pub colour: Colour,
     pub value: Value,
