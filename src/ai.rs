@@ -1,48 +1,57 @@
-use crate::{card, player::Player, ui::UserAction};
+use crate::{actor, card, game};
 
-struct Ai {
+pub struct AiActor {
     next_card_to_play: usize,
+    player_index: usize,
 }
-static mut AI: Ai = Ai {
-    next_card_to_play: 0,
-};
 
-pub fn get_ai_turn_action(player: &Player) -> UserAction {
-    unsafe {
-        let card_to_play = AI.next_card_to_play;
-        if card_to_play < player.get_number_of_cards() {
-            AI.next_card_to_play += 1;
-            UserAction::Play(card_to_play)
+impl actor::Actor for AiActor {
+    fn get_turn_action(&mut self, game: &game::Game) -> actor::UserAction {
+        let card_to_play = self.next_card_to_play;
+        if card_to_play < game.get_player(self.player_index).get_number_of_cards() {
+            self.next_card_to_play += 1;
+            actor::UserAction::Play(card_to_play)
         } else {
-            UserAction::Draw
-        }
-    }
-}
-
-pub fn reset_ai() {
-    unsafe {
-        AI.next_card_to_play = 0;
-    }
-}
-
-pub fn choose_colour(player: &Player) -> card::Colour {
-    let mut red: (card::Colour, usize) = (card::Colour::Red, 0);
-    let mut green: (card::Colour, usize) = (card::Colour::Green, 0);
-    let mut blue: (card::Colour, usize) = (card::Colour::Blue, 0);
-    let mut yellow: (card::Colour, usize) = (card::Colour::Yellow, 0);
-    for card in player.get_hand() {
-        match card.colour {
-            card::Colour::Red => red.1 += 1,
-            card::Colour::Green => green.1 += 1,
-            card::Colour::Blue => blue.1 += 1,
-            card::Colour::Yellow => yellow.1 += 1,
-            card::Colour::Wild => {}
+            actor::UserAction::Draw
         }
     }
 
-    [red, green, blue, yellow]
-        .iter()
-        .max_by(|a, b| a.1.cmp(&b.1))
-        .unwrap()
-        .0
+    fn get_color_choice(&mut self, game: &game::Game) -> card::Colour {
+        let mut red: (card::Colour, usize) = (card::Colour::Red, 0);
+        let mut green: (card::Colour, usize) = (card::Colour::Green, 0);
+        let mut blue: (card::Colour, usize) = (card::Colour::Blue, 0);
+        let mut yellow: (card::Colour, usize) = (card::Colour::Yellow, 0);
+        for card in game.get_player(self.player_index).get_hand() {
+            match card.colour {
+                card::Colour::Red => red.1 += 1,
+                card::Colour::Green => green.1 += 1,
+                card::Colour::Blue => blue.1 += 1,
+                card::Colour::Yellow => yellow.1 += 1,
+                card::Colour::Wild => {}
+            }
+        }
+
+        [red, green, blue, yellow]
+            .iter()
+            .max_by(|a, b| a.1.cmp(&b.1))
+            .unwrap()
+            .0
+    }
+
+    fn pre_turn_action(&mut self, _game: &game::Game) {
+        // Do nothing
+    }
+
+    fn post_turn_action(&mut self, _game: &game::Game) {
+        self.next_card_to_play = 0;
+    }
+}
+
+impl AiActor {
+    pub fn new(player_index: usize) -> AiActor {
+        AiActor {
+            next_card_to_play: 0,
+            player_index,
+        }
+    }
 }

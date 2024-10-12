@@ -1,7 +1,7 @@
+use crate::actor;
 use crate::card;
 use crate::deck;
 use crate::player;
-use crate::ui;
 
 type GameResult<T> = Result<T, Error>;
 
@@ -156,11 +156,11 @@ impl Game {
     pub fn get_player_action(
         &self,
         player: &player::Player,
-        action: ui::UserAction,
+        action: actor::UserAction,
     ) -> GameResult<GameAction> {
         match action {
-            ui::UserAction::Draw => Ok(GameAction::PlayerDraw),
-            ui::UserAction::Play(i) => {
+            actor::UserAction::Draw => Ok(GameAction::PlayerDraw),
+            actor::UserAction::Play(i) => {
                 if let Ok(card) = player.get_card(i) {
                     if self.is_valid_play(card) {
                         Ok(GameAction::PlayerPlaysCard(i))
@@ -218,8 +218,12 @@ impl Game {
         &self.deck
     }
 
+    pub fn get_player(&self, index: usize) -> &player::Player {
+        &self.players[index]
+    }
+
     pub fn get_current_player(&self) -> &player::Player {
-        &self.players[self.player_index]
+        self.get_player(self.player_index)
     }
 
     pub fn new(num_of_players: usize, num_of_cards: usize) -> Self {

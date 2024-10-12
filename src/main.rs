@@ -1,6 +1,7 @@
 use cli::parse_input;
 use game::check_game_attributes;
 
+mod actor;
 mod ai;
 mod card;
 mod cli;

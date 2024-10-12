@@ -1,11 +1,35 @@
-use crate::{card::Colour, deck::Deck, player::Player};
+use crate::{actor, card, deck, game, player};
+use core::str;
 use std::io;
 
 const DRAW_INDEX: &str = "d";
 
-pub enum UserAction {
-    Draw,
-    Play(usize),
+pub struct HumanActor {
+    player_index: usize,
+}
+
+impl actor::Actor for HumanActor {
+    fn get_turn_action(&mut self, _game: &game::Game) -> actor::UserAction {
+        get_user_turn_action()
+    }
+
+    fn get_color_choice(&mut self, _game: &game::Game) -> card::Colour {
+        get_user_wild_colour()
+    }
+
+    fn pre_turn_action(&mut self, game: &game::Game) {
+        get_game_context(game.get_player(self.player_index), game.get_deck());
+    }
+
+    fn post_turn_action(&mut self, _game: &game::Game) {
+        // Do nothing
+    }
+}
+
+impl HumanActor {
+    pub fn new(player_index: usize) -> HumanActor {
+        HumanActor { player_index }
+    }
 }
 
 fn clear_terminal() {
@@ -13,7 +37,7 @@ fn clear_terminal() {
     print!("{}[H", 27 as char); // Move the cursor to the top-left corner
 }
 
-pub fn get_game_context(player: &Player, deck: &Deck) {
+pub fn get_game_context(player: &player::Player, deck: &deck::Deck) {
     clear_terminal();
     println!("Player {player}'s turn", player = player.get_id());
     println!(
@@ -29,16 +53,16 @@ pub fn get_game_context(player: &Player, deck: &Deck) {
     println!("{DRAW_INDEX:02}: Draw card");
 }
 
-pub fn get_user_turn_action() -> UserAction {
+pub fn get_user_turn_action() -> actor::UserAction {
     let mut input = String::new();
 
     loop {
         if io::stdin().read_line(&mut input).is_ok() {
             if let Ok(index) = input.trim().parse::<usize>() {
-                return UserAction::Play(index);
+                return actor::UserAction::Play(index);
             } else if let Ok(str) = input.trim().parse::<String>() {
                 if str == DRAW_INDEX {
-                    return UserAction::Draw;
+                    return actor::UserAction::Draw;
                 }
             }
         }
@@ -46,11 +70,11 @@ pub fn get_user_turn_action() -> UserAction {
     }
 }
 
-pub fn announce_winner(player: &Player) {
+pub fn announce_winner(player: &player::Player) {
     println!("Player {id} wins!", id = player.get_id());
 }
 
-pub fn get_user_wild_colour() -> Colour {
+pub fn get_user_wild_colour() -> card::Colour {
     let mut input = String::new();
 
     println!("r: Red");
@@ -62,10 +86,10 @@ pub fn get_user_wild_colour() -> Colour {
         if io::stdin().read_line(&mut input).is_ok() {
             if let Ok(str) = input.trim().parse::<String>() {
                 let colour = match str.as_str() {
-                    "r" => Ok(Colour::Red),
-                    "g" => Ok(Colour::Green),
-                    "b" => Ok(Colour::Blue),
-                    "y" => Ok(Colour::Yellow),
+                    "r" => Ok(card::Colour::Red),
+                    "g" => Ok(card::Colour::Green),
+                    "b" => Ok(card::Colour::Blue),
+                    "y" => Ok(card::Colour::Yellow),
                     _ => Err(()),
                 };
 

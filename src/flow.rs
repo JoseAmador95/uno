@@ -1,3 +1,4 @@
+use crate::actor;
 use crate::ai;
 use crate::game;
 use crate::ui;
@@ -16,13 +17,22 @@ enum GameState {
 pub struct GameFlow {
     game: game::Game,
     state: GameState,
+    actors: Vec<Box<dyn actor::Actor>>,
 }
 
 impl GameFlow {
     pub fn new(num_of_players: usize, num_of_cards: usize) -> Self {
+        let game = game::Game::new(num_of_players, num_of_cards);
+        let mut actors: Vec<Box<dyn actor::Actor>> =
+            vec![Box::new(ui::HumanActor::new(game.get_player(0).get_id()))];
+        actors.extend((1..num_of_players).map(|i| {
+            Box::new(ai::AiActor::new(game.get_player(i).get_id())) as Box<dyn actor::Actor>
+        }));
+
         GameFlow {
-            game: game::Game::new(num_of_players, num_of_cards),
+            game,
             state: GameState::Init,
+            actors,
         }
     }
 
@@ -54,20 +64,13 @@ impl GameFlow {
 
     fn handle_turn_start(&mut self) -> GameState {
         let player = self.game.get_current_player();
-        let deck = self.game.get_deck();
-        if player.get_id() == 0 {
-            ui::get_game_context(player, deck);
-        }
+        self.actors[player.get_id()].pre_turn_action(&self.game);
         GameState::GetPlayerAction
     }
 
     fn handle_get_player_action(&mut self) -> GameState {
         let player = self.game.get_current_player();
-        let action = if player.get_id() == 0 {
-            ui::get_user_turn_action()
-        } else {
-            ai::get_ai_turn_action(player)
-        };
+        let action = self.actors[player.get_id()].get_turn_action(&self.game);
         match self.game.get_player_action(player, action) {
             Ok(game::GameAction::PlayerDraw) => {
                 GameState::ExecutePlayerAction(game::GameAction::PlayerDraw)
@@ -90,11 +93,7 @@ impl GameFlow {
 
     fn handle_choose_colour(&mut self) -> GameState {
         let player = self.game.get_current_player();
-        let colour = if player.get_id() == 0 {
-            ui::get_user_wild_colour()
-        } else {
-            ai::choose_colour(player)
-        };
+        let colour = self.actors[player.get_id()].get_color_choice(&self.game);
         self.game.change_wild_color(&colour);
         GameState::EndTurn
     }
@@ -104,7 +103,7 @@ impl GameFlow {
         if self.game.has_player_won(player.get_id()) {
             return GameState::EndGame;
         }
-        ai::reset_ai();
+        self.actors[player.get_id()].post_turn_action(&self.game);
         self.game.set_next_player();
         GameState::TurnStarts
     }
