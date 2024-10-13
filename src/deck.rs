@@ -25,7 +25,7 @@ pub trait DeckTrait {
     fn refill_draw_pile(&mut self) -> DeckResult<()>;
     fn number_of_cards_in_draw_pile(&self) -> usize;
     fn change_colour_of_top_card_in_discard(&mut self, colour: &card::Colour);
-    fn new() -> Self;
+    fn new(deck: Option<Vec<card::Card>>) -> Self;
 }
 
 impl DeckTrait for Deck {
@@ -69,9 +69,15 @@ impl DeckTrait for Deck {
         }
     }
 
-    fn new() -> Self {
+    fn new(deck: Option<Vec<card::Card>>) -> Self {
+        let card_set = if let Some(deck) = deck {
+            deck
+        } else {
+            GAME_DECK.to_vec()
+        };
+
         let mut deck = Deck {
-            draw_pile: VecDeque::from(GAME_DECK.to_vec()),
+            draw_pile: VecDeque::from(card_set),
             discard_pile: VecDeque::new(),
         };
         deck.shuffle();
@@ -233,10 +239,33 @@ mod tests {
     }
 
     #[test]
-    fn test_new_deck() {
-        let deck = Deck::new();
+    fn test_new_deck_default() {
+        let deck = Deck::new(None);
         assert!(!deck.draw_pile.is_empty());
         assert_eq!(deck.discard_pile.len(), 1);
+    }
+
+    #[test]
+    fn test_new_deck_custom() {
+        let card_set = [
+            Card {
+                colour: Colour::Red,
+                value: Value::Number(1),
+            },
+            Card {
+                colour: Colour::Blue,
+                value: Value::Number(2),
+            },
+        ];
+        let deck = Deck::new(Some(card_set.to_vec()));
+        assert_eq!(deck.draw_pile.len(), card_set.len() - 1);
+        assert_eq!(deck.discard_pile.len(), 1);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_new_deck_fail() {
+        let _ = Deck::new(Some(Vec::new()));
     }
 
     #[test]

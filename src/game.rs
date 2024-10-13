@@ -234,7 +234,7 @@ impl Game {
         let players = (0..num_of_players).map(player::Player::new).collect();
         Game {
             players,
-            deck: deck::Deck::new(),
+            deck: deck::Deck::new(None),
             player_index: 0,
             is_flow_clockwise: true,
             num_of_cards,
