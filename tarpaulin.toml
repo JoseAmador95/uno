@@ -1,0 +1,9 @@
+[report]
+output-dir = "target/tarpaulin"
+out = ["Html", "Xml"]
+
+[run]
+all-features = true
+count = true
+color = "Never"
+workspace = true
