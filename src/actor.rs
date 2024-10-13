@@ -1,5 +1,6 @@
 use crate::{card, game};
 
+#[derive(PartialEq, Debug)]
 pub enum UserAction {
     Draw,
     Play(usize),
