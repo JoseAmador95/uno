@@ -17,25 +17,41 @@ impl actor::Actor for AiActor {
     }
 
     fn get_color_choice(&mut self, game: &game::Game) -> card::Colour {
-        let mut red: (card::Colour, usize) = (card::Colour::Red, 0);
-        let mut green: (card::Colour, usize) = (card::Colour::Green, 0);
-        let mut blue: (card::Colour, usize) = (card::Colour::Blue, 0);
-        let mut yellow: (card::Colour, usize) = (card::Colour::Yellow, 0);
+        struct ColourCount {
+            colour: card::Colour,
+            count: usize,
+        }
+        let mut red = ColourCount {
+            colour: card::Colour::Red,
+            count: 0,
+        };
+        let mut green = ColourCount {
+            colour: card::Colour::Green,
+            count: 0,
+        };
+        let mut blue = ColourCount {
+            colour: card::Colour::Blue,
+            count: 0,
+        };
+        let mut yellow = ColourCount {
+            colour: card::Colour::Yellow,
+            count: 0,
+        };
         for card in game.get_player(self.player_index).get_hand() {
             match card.colour {
-                card::Colour::Red => red.1 += 1,
-                card::Colour::Green => green.1 += 1,
-                card::Colour::Blue => blue.1 += 1,
-                card::Colour::Yellow => yellow.1 += 1,
+                card::Colour::Red => red.count += 1,
+                card::Colour::Green => green.count += 1,
+                card::Colour::Blue => blue.count += 1,
+                card::Colour::Yellow => yellow.count += 1,
                 card::Colour::Wild => {}
             }
         }
 
         [red, green, blue, yellow]
             .iter()
-            .max_by(|a, b| a.1.cmp(&b.1))
-            .unwrap()
-            .0
+            .max_by(|a, b| a.count.cmp(&b.count))
+            .unwrap() // The iterator is never empty
+            .colour
     }
 
     fn pre_turn_action(&mut self, _game: &game::Game) {
