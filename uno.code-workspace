@@ -8,5 +8,6 @@
 		"coverage-gutters.coverageFileNames": [
 			"target/tarpaulin/cobertura.xml"
 		],
+		"coverage-gutters.coverageReportFileName": "target/tarpaulin/tarpaulin-report.html"
 	}
 }
