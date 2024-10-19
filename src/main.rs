@@ -1,5 +1,5 @@
 use cli::parse_input;
-use game::check_game_attributes;
+use flow::GameFlow;
 
 mod actor;
 mod ai;
@@ -14,8 +14,8 @@ mod ui;
 
 fn main() -> Result<(), String> {
     let args = parse_input();
-    check_game_attributes(args.num_of_players, args.num_of_cards)?;
-    let mut flow = flow::GameFlow::new(args.num_of_players, args.num_of_cards);
-    flow.start_game();
+    game::check_game_attributes(args.num_of_players, args.num_of_cards)?;
+    let mut game = game::Game::new(args.num_of_players, args.num_of_cards);
+    game.start_game();
     Ok(())
 }

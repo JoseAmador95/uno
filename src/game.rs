@@ -1,10 +1,14 @@
 use crate::actor;
+use crate::ai;
 use crate::card;
 use crate::deck;
 use crate::deck::DeckTrait;
+use crate::flow;
 use crate::player;
+use crate::ui;
 
 type GameResult<T> = Result<T, Error>;
+type GameActor = Box<dyn actor::Actor>;
 
 pub enum Error {
     DrawPileIsEmpty,
@@ -33,46 +37,43 @@ pub fn check_game_attributes(num_of_players: usize, num_of_cards: usize) -> Resu
 }
 
 pub struct Game {
-    players: Vec<player::Player>,
+    state: flow::GameState,
+    // players: Vec<player::Player>,
+    actors: Vec<GameActor>,
     deck: deck::Deck,
-    player_index: usize,
+    actor_index: usize,
     is_flow_clockwise: bool,
     num_of_cards: usize,
 }
 
 impl Game {
-    fn player_draws(
-        player: &mut player::Player,
-        deck: &mut impl deck::DeckTrait,
-    ) -> GameResult<GameAction> {
-        match player.draw(deck) {
-            Ok(()) => Ok(GameAction::PlayerDraw),
-            Err(player::Error::DrawPileIsEmpty) => Err(Error::DrawPileIsEmpty),
+    fn player_draws(&mut self, actor_index: usize) -> GameResult<GameAction> {
+        match self.deck.draw() {
+            Ok(card) => {
+                self.get_actor_mut(actor_index)
+                    .get_player_mut()
+                    .take_card(card);
+                Ok(GameAction::PlayerDraw)
+            }
+            Err(deck::Error::DrawPileIsEmpty) => Err(Error::DrawPileIsEmpty),
             _ => Err(Error::Unknown),
         }
     }
 
-    fn player_draws_with_pile_check(
-        player: &mut player::Player,
-        deck: &mut impl deck::DeckTrait,
-    ) -> GameResult<GameAction> {
-        match player.draw(deck) {
-            Ok(()) => Ok(GameAction::PlayerDraw),
-            Err(player::Error::DrawPileIsEmpty) => {
-                let _ = deck.refill_draw_pile(); // No need to check for DiscardPileIsEmpty
-                Self::player_draws(player, deck)
+    fn player_draws_with_pile_check(&mut self, actor_index: usize) -> GameResult<GameAction> {
+        match self.player_draws(actor_index) {
+            Ok(_) => Ok(GameAction::PlayerDraw),
+            Err(Error::DrawPileIsEmpty) => {
+                let _ = self.deck.refill_draw_pile(); // No need to check for DiscardPileIsEmpty
+                self.player_draws(actor_index)
             }
             _ => Err(Error::Unknown),
         }
     }
 
-    fn player_draws_multiple(
-        &mut self,
-        player_index: usize,
-        num_of_cards: usize,
-    ) -> GameResult<()> {
+    fn player_draws_multiple(&mut self, actor_index: usize, num_of_cards: usize) -> GameResult<()> {
         for _ in 0..num_of_cards {
-            Self::player_draws_with_pile_check(&mut self.players[player_index], &mut self.deck)?;
+            self.player_draws_with_pile_check(actor_index)?;
         }
 
         Ok(())
@@ -82,9 +83,9 @@ impl Game {
         self.deck.change_colour_of_top_card_in_discard(colour);
     }
 
-    fn handle_wild_draw(&mut self, next_player_index: usize, num_of_cards: usize) -> GameAction {
+    fn handle_wild_draw(&mut self, affected_actor_index: usize, num_of_cards: usize) -> GameAction {
         if let Err(Error::DrawPileIsEmpty) =
-            self.player_draws_multiple(next_player_index, num_of_cards)
+            self.player_draws_multiple(affected_actor_index, num_of_cards)
         {
             // There are not enough cards on the draw and discard piles to take two cards
         }
@@ -93,7 +94,6 @@ impl Game {
     }
 
     fn handle_wild(&mut self) -> GameAction {
-        // Self::change_wild_color(card);
         GameAction::ChooseColour
     }
 
@@ -103,36 +103,34 @@ impl Game {
     }
 
     fn handle_skip(&mut self) -> GameAction {
-        self.set_next_player();
+        self.set_next_actor();
         GameAction::None
     }
 
-    fn handle_draw_two(&mut self, next_player_index: usize) -> GameAction {
-        if let Err(Error::DrawPileIsEmpty) = self.player_draws_multiple(next_player_index, 2) {
+    fn handle_draw_two(&mut self, affected_actor_index: usize) -> GameAction {
+        if let Err(Error::DrawPileIsEmpty) = self.player_draws_multiple(affected_actor_index, 2) {
             // There are not enough cards on the draw and discard piles to take two cards
         }
         GameAction::None
     }
 
-    fn execute_card_action(&mut self, player_index: usize, card: &mut card::Card) -> GameAction {
+    fn execute_card_action(&mut self, actor_index: usize, card: &mut card::Card) -> GameAction {
         match card.value {
-            card::Value::DrawTwo => self.handle_draw_two(self.get_next_player(player_index)),
+            card::Value::DrawTwo => self.handle_draw_two(self.get_next_player(actor_index)),
             card::Value::Skip => self.handle_skip(),
             card::Value::Reverse => self.handle_reverse(),
             card::Value::Wild => self.handle_wild(),
-            card::Value::WildDraw(n) => {
-                self.handle_wild_draw(self.get_next_player(player_index), n)
-            }
+            card::Value::WildDraw(n) => self.handle_wild_draw(self.get_next_player(actor_index), n),
             card::Value::Number(_) => GameAction::None,
         }
     }
 
-    fn get_next_player(&self, current_player_index: usize) -> usize {
-        if !self.is_flow_clockwise && current_player_index == 0 {
-            self.players.len() - 1
+    fn get_next_player(&self, current_actor_index: usize) -> usize {
+        if !self.is_flow_clockwise && current_actor_index == 0 {
+            self.actors.len() - 1
         } else {
             let index_increment: isize = if self.is_flow_clockwise { 1 } else { -1 };
-            (current_player_index.wrapping_add_signed(index_increment)) % self.players.len()
+            (current_actor_index.wrapping_add_signed(index_increment)) % self.actors.len()
         }
     }
 
@@ -180,16 +178,18 @@ impl Game {
 
     pub fn execute_player_action(
         &mut self,
-        player_index: usize,
+        actor_index: usize,
         action: &GameAction,
     ) -> GameResult<GameAction> {
         match action {
-            GameAction::PlayerDraw => {
-                Self::player_draws_with_pile_check(&mut self.players[player_index], &mut self.deck)
-            }
+            GameAction::PlayerDraw => self.player_draws_with_pile_check(actor_index),
             GameAction::PlayerPlaysCard(index) => {
-                if let Ok(mut card) = self.players[player_index].play_card(*index) {
-                    let result = self.execute_card_action(player_index, &mut card);
+                if let Ok(mut card) = self
+                    .get_actor_mut(actor_index)
+                    .get_player_mut()
+                    .play_card(*index)
+                {
+                    let result = self.execute_card_action(actor_index, &mut card);
                     self.deck.discard(card);
                     Ok(result)
                 } else {
@@ -201,7 +201,7 @@ impl Game {
     }
 
     pub fn deal_cards_to_players(&mut self) {
-        let num_of_players = self.players.len();
+        let num_of_players = self.actors.len();
         for i in 0..num_of_players {
             assert!(
                 self.player_draws_multiple(i, self.num_of_cards).is_ok(),
@@ -210,34 +210,109 @@ impl Game {
         }
     }
 
-    pub fn set_next_player(&mut self) {
-        self.player_index = self.get_next_player(self.player_index);
+    pub fn set_next_actor(&mut self) {
+        self.actor_index = self.get_next_player(self.actor_index);
     }
 
-    pub fn has_player_won(&self, player_index: usize) -> bool {
-        self.players[player_index].is_hand_empty()
+    pub fn has_player_won(&self, actor_index: usize) -> bool {
+        self.get_actor(actor_index).get_player().is_hand_empty()
     }
 
-    pub fn get_deck(&self) -> &deck::Deck {
-        &self.deck
+    pub fn get_actor_mut(&mut self, index: usize) -> &mut GameActor {
+        &mut self.actors[index]
     }
 
-    pub fn get_player(&self, index: usize) -> &player::Player {
-        &self.players[index]
+    pub fn get_current_actor_mut(&mut self) -> &mut GameActor {
+        self.get_actor_mut(self.actor_index)
     }
 
-    pub fn get_current_player(&self) -> &player::Player {
-        self.get_player(self.player_index)
+    pub fn get_actor(&self, index: usize) -> &GameActor {
+        &self.actors[index]
+    }
+
+    pub fn get_current_actor(&self) -> &GameActor {
+        self.get_actor(self.actor_index)
     }
 
     pub fn new(num_of_players: usize, num_of_cards: usize) -> Self {
-        let players = (0..num_of_players).map(player::Player::new).collect();
+        let mut actors: Vec<Box<dyn actor::Actor>> = vec![Box::new(ui::HumanActor::new(0))];
+        actors.extend(
+            (1..num_of_players).map(|i| Box::new(ai::AiActor::new(i)) as Box<dyn actor::Actor>),
+        );
+
         Game {
-            players,
+            state: flow::GameState::Init,
+            actors,
             deck: deck::Deck::new(None),
-            player_index: 0,
+            actor_index: 0,
             is_flow_clockwise: true,
             num_of_cards,
         }
+    }
+}
+
+impl flow::GameFlow for Game {
+    fn get_state(&self) -> flow::GameState {
+        self.state
+    }
+
+    fn set_state(&mut self, state: flow::GameState) {
+        self.state = state;
+    }
+
+    fn handle_init(&mut self) -> flow::GameState {
+        self.deal_cards_to_players();
+        flow::GameState::TurnStarts
+    }
+
+    fn handle_turn_start(&mut self) -> flow::GameState {
+        ui::get_game_context(self.actor_index, &self.deck);
+        self.get_current_actor_mut().pre_turn_action();
+        flow::GameState::GetPlayerAction
+    }
+
+    fn handle_get_player_action(&mut self) -> flow::GameState {
+        let action = self.get_current_actor_mut().get_turn_action();
+        match self.get_player_action(self.get_current_actor().get_player(), action) {
+            Ok(GameAction::PlayerDraw) => {
+                flow::GameState::ExecutePlayerAction(GameAction::PlayerDraw)
+            }
+            Ok(GameAction::PlayerPlaysCard(i)) => {
+                flow::GameState::ExecutePlayerAction(GameAction::PlayerPlaysCard(i))
+            }
+            _ => flow::GameState::GetPlayerAction,
+        }
+    }
+
+    fn handle_execute_player_action(&mut self, action: &GameAction) -> flow::GameState {
+        let actor = self.get_current_actor();
+        let action = self.execute_player_action(actor.get_id(), action);
+        match action {
+            Ok(GameAction::ChooseColour) => flow::GameState::ChooseColour,
+            _ => flow::GameState::EndTurn,
+        }
+    }
+
+    fn handle_choose_colour(&mut self) -> flow::GameState {
+        let actor = self.get_current_actor_mut();
+        let colour = actor.get_color_choice();
+        self.change_wild_color(&colour);
+        flow::GameState::EndTurn
+    }
+
+    fn handle_end_turn(&mut self) -> flow::GameState {
+        let player = self.get_current_actor();
+        if self.has_player_won(player.get_id()) {
+            return flow::GameState::EndGame;
+        }
+        self.get_current_actor_mut().post_turn_action();
+        self.set_next_actor();
+        flow::GameState::TurnStarts
+    }
+
+    fn handle_end_game(&mut self) -> flow::GameState {
+        let actor = self.get_current_actor();
+        ui::announce_winner(actor.get_id());
+        flow::GameState::End
     }
 }

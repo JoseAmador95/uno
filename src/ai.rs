@@ -1,14 +1,26 @@
-use crate::{actor, card, game};
+use crate::{actor, card, player};
 
 pub struct AiActor {
+    id: usize,
     next_card_to_play: usize,
-    player_index: usize,
+    player: player::Player,
 }
 
 impl actor::Actor for AiActor {
-    fn get_turn_action(&mut self, game: &game::Game) -> actor::UserAction {
+    fn get_id(&self) -> usize {
+        self.id
+    }
+    fn get_player(&self) -> &player::Player {
+        &self.player
+    }
+
+    fn get_player_mut(&mut self) -> &mut player::Player {
+        &mut self.player
+    }
+
+    fn get_turn_action(&mut self) -> actor::UserAction {
         let card_to_play = self.next_card_to_play;
-        if card_to_play < game.get_player(self.player_index).get_number_of_cards() {
+        if card_to_play < self.player.get_number_of_cards() {
             self.next_card_to_play += 1;
             actor::UserAction::Play(card_to_play)
         } else {
@@ -16,7 +28,7 @@ impl actor::Actor for AiActor {
         }
     }
 
-    fn get_color_choice(&mut self, game: &game::Game) -> card::Colour {
+    fn get_color_choice(&mut self) -> card::Colour {
         struct ColourCount {
             colour: card::Colour,
             count: usize,
@@ -37,7 +49,7 @@ impl actor::Actor for AiActor {
             colour: card::Colour::Yellow,
             count: 0,
         };
-        for card in game.get_player(self.player_index).get_hand() {
+        for card in self.player.get_hand() {
             match card.colour {
                 card::Colour::Red => red.count += 1,
                 card::Colour::Green => green.count += 1,
@@ -54,20 +66,21 @@ impl actor::Actor for AiActor {
             .colour
     }
 
-    fn pre_turn_action(&mut self, _game: &game::Game) {
+    fn pre_turn_action(&mut self) {
         // Do nothing
     }
 
-    fn post_turn_action(&mut self, _game: &game::Game) {
+    fn post_turn_action(&mut self) {
         self.next_card_to_play = 0;
     }
 }
 
 impl AiActor {
-    pub fn new(player_index: usize) -> AiActor {
+    pub fn new(id: usize) -> AiActor {
         AiActor {
+            id,
             next_card_to_play: 0,
-            player_index,
+            player: player::Player::new(),
         }
     }
 }

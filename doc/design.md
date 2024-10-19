@@ -138,15 +138,15 @@ classDiagram
       + fn choose_colour(player: &Player) -> Colour
     }
 
-    Colour --> Card
-    CardValue --> Card
-    Card --> Deck
-    Card --> Player
-    Player --> Game
-    Deck --> Game
-    UserAction --> Game
-    GameAction --> Game
-    Game --> GameFlow
-    GameState --> GameFlow
-    Ai --> GameFlow
-```
+    Card --> Colour
+    Card --> CardValue
+    Deck --> Card
+    Player --> Card
+    Game --> Player
+    Game --> Deck
+    Game --> UserAction
+    Game --> GameAction
+    GameFlow --> Game
+    GameFlow --> GameState
+    GameFlow --> Ai
+    ```

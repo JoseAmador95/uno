@@ -1,30 +1,19 @@
 use crate::card::Card;
-use crate::deck;
 
 type PlayerResult<T> = Result<T, Error>;
 
 #[derive(Debug, PartialEq)]
 pub enum Error {
     IndexOutOfBounds,
-    DrawPileIsEmpty,
-    Unknown,
 }
 
 pub struct Player {
-    id: usize,
     hand: Vec<Card>,
 }
 
 impl Player {
-    pub fn draw(&mut self, deck: &mut impl deck::DeckTrait) -> PlayerResult<()> {
-        match deck.draw() {
-            Ok(c) => {
-                self.hand.push(c);
-                Ok(())
-            }
-            Err(deck::Error::DrawPileIsEmpty) => Err(Error::DrawPileIsEmpty),
-            Err(_) => Err(Error::Unknown),
-        }
+    pub fn take_card(&mut self, card: Card) {
+        self.hand.push(card);
     }
 
     pub fn play_card(&mut self, index: usize) -> PlayerResult<Card> {
@@ -45,10 +34,6 @@ impl Player {
 
     pub fn is_hand_empty(&self) -> bool {
         self.hand.is_empty()
-    }
-
-    pub fn get_id(&self) -> usize {
-        self.id
     }
 
     pub fn get_number_of_cards(&self) -> usize {
@@ -72,11 +57,8 @@ impl Player {
         println!("{}", self.hand_to_string());
     }
 
-    pub fn new(id: usize) -> Self {
-        Player {
-            id,
-            hand: Vec::new(),
-        }
+    pub fn new() -> Self {
+        Player { hand: Vec::new() }
     }
 }
 
@@ -86,32 +68,8 @@ mod tests {
     use crate::card;
 
     #[test]
-    fn test_draw_ok() {
-        let mut player = Player::new(0);
-        let mut deck = deck::MockDeckTrait::default();
-        deck.expect_draw().returning(|| {
-            Result::Ok(card::Card {
-                colour: card::Colour::Red,
-                value: card::Value::Number(1),
-            })
-        });
-        let result = player.draw(&mut deck);
-        assert_eq!(result, Ok(()));
-    }
-
-    #[test]
-    fn test_draw_fail() {
-        let mut player = Player::new(0);
-        let mut deck = deck::MockDeckTrait::default();
-        deck.expect_draw()
-            .returning(|| Err(deck::Error::DrawPileIsEmpty));
-        let result = player.draw(&mut deck);
-        assert_eq!(result, Err(Error::DrawPileIsEmpty));
-    }
-
-    #[test]
     fn test_play_card_ok() {
-        let mut player = Player::new(0);
+        let mut player = Player::new();
         player.hand.push(card::Card {
             colour: card::Colour::Red,
             value: card::Value::Number(1),
@@ -123,20 +81,31 @@ mod tests {
 
     #[test]
     fn test_play_card_fail() {
-        let mut player = Player::new(0);
+        let mut player = Player::new();
         let result = player.play_card(1);
         assert_eq!(result, Err(Error::IndexOutOfBounds));
     }
 
     #[test]
+    fn test_take_card() {
+        let mut player = Player::new();
+        let card = card::Card {
+            colour: card::Colour::Red,
+            value: card::Value::Number(1),
+        };
+        player.take_card(card);
+        assert_eq!(player.hand, vec![card]);
+    }
+
+    #[test]
     fn test_is_hand_empty_true() {
-        let player = Player::new(0);
+        let player = Player::new();
         assert!(player.is_hand_empty());
     }
 
     #[test]
     fn test_is_hand_empty_false() {
-        let mut player = Player::new(0);
+        let mut player = Player::new();
         player.hand.push(card::Card {
             colour: card::Colour::Red,
             value: card::Value::Number(1),
@@ -146,7 +115,7 @@ mod tests {
 
     #[test]
     fn test_get_number_of_cards() {
-        let mut player = Player::new(0);
+        let mut player = Player::new();
         assert_eq!(player.get_number_of_cards(), 0);
         player.hand.push(card::Card {
             colour: card::Colour::Red,
@@ -156,19 +125,12 @@ mod tests {
     }
 
     #[test]
-    fn test_get_id() {
-        let id = 10;
-        let player = Player::new(id);
-        assert_eq!(player.get_id(), id);
-    }
-
-    #[test]
     fn test_get_hand_ok() {
         let card = card::Card {
             colour: card::Colour::Red,
             value: card::Value::Number(1),
         };
-        let mut player = Player::new(0);
+        let mut player = Player::new();
         player.hand.push(card);
         assert_eq!(player.get_hand(), &vec![card]);
     }
@@ -179,7 +141,7 @@ mod tests {
             colour: card::Colour::Red,
             value: card::Value::Number(1),
         };
-        let mut player = Player::new(0);
+        let mut player = Player::new();
         player.hand.push(card);
         let result = player.get_card(0);
         assert_eq!(result, Ok(&card));
@@ -187,7 +149,7 @@ mod tests {
 
     #[test]
     fn test_get_card_index_out_of_bounds() {
-        let player = Player::new(0);
+        let player = Player::new();
         let result = player.get_card(0);
         assert_eq!(result, Err(Error::IndexOutOfBounds));
     }
@@ -198,7 +160,7 @@ mod tests {
             colour: card::Colour::Red,
             value: card::Value::Number(1),
         };
-        let mut player = Player::new(0);
+        let mut player = Player::new();
         player.hand.push(card);
         player.hand.push(card);
         player.hand.push(card);

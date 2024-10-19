@@ -1,4 +1,4 @@
-use crate::{card, game};
+use crate::{card, player};
 
 #[derive(PartialEq, Debug)]
 pub enum UserAction {
@@ -7,8 +7,11 @@ pub enum UserAction {
 }
 
 pub trait Actor {
-    fn get_turn_action(&mut self, game: &game::Game) -> UserAction;
-    fn get_color_choice(&mut self, game: &game::Game) -> card::Colour;
-    fn pre_turn_action(&mut self, game: &game::Game);
-    fn post_turn_action(&mut self, game: &game::Game);
+    fn get_turn_action(&mut self) -> UserAction;
+    fn get_color_choice(&mut self) -> card::Colour;
+    fn pre_turn_action(&mut self);
+    fn post_turn_action(&mut self);
+    fn get_player(&self) -> &player::Player;
+    fn get_player_mut(&mut self) -> &mut player::Player;
+    fn get_id(&self) -> usize;
 }
