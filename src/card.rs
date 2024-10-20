@@ -1,5 +1,6 @@
 use colored::Colorize;
 
+/// Represents the possible colors of a card.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Colour {
     Red,
@@ -9,6 +10,7 @@ pub enum Colour {
     Wild,
 }
 
+/// Represents the possible values of a card.
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum Value {
     Reverse,
@@ -19,6 +21,7 @@ pub enum Value {
     WildDraw(usize),
 }
 
+/// Represents a card and its attributes.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Card {
     pub colour: Colour,
@@ -26,6 +29,9 @@ pub struct Card {
 }
 
 impl std::fmt::Display for Card {
+    /// Formats the card as a string with colored output.
+    ///
+    /// Returns a `std::fmt::Result` indicating the success or failure of the formatting operation.
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let colour = match self.colour {
             Colour::Blue => "Blue".blue(),
