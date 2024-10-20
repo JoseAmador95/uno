@@ -318,7 +318,7 @@ mod tests {
         };
         deck.discard(card);
         deck.revert_wild_cards_in_discard_pile();
-        assert_eq!(deck.discard_pile.back().unwrap().colour, Colour::Wild);
+        assert_eq!(*deck.discard_pile.back().unwrap(), card);
     }
 
     #[test]
