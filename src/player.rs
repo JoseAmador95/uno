@@ -1,21 +1,37 @@
 use crate::card::Card;
 
+/// Type alias for results returned by player-related operations.
+///
+/// This alias is used to simplify the return type of functions that may
+/// produce an `Error` related to player actions, such as attempting to
+/// play a card from an invalid index.
+///
+/// # Type Parameters
+///
+/// * `T` - The type of the successful result.
 type PlayerResult<T> = Result<T, Error>;
 
+/// Represents errors that can occur during player-related operations.
 #[derive(Debug, PartialEq)]
 pub enum Error {
+    /// Error indicating that an attempt was made to access a card at an invalid index.
     IndexOutOfBounds,
 }
 
+/// Represents a player in the game, holding a hand of cards.
 pub struct Player {
+    /// A vector of `Card` structs representing the player's hand.
     hand: Vec<Card>,
 }
 
 impl Player {
+    /// Adds a card to the player's hand.
     pub fn take_card(&mut self, card: Card) {
         self.hand.push(card);
     }
 
+    /// Plays a card from the player's hand at the specified index.
+    /// Returns the card if the index is valid, otherwise returns `Err(Error::IndexOutOfBounds)`.
     pub fn play_card(&mut self, index: usize) -> PlayerResult<Card> {
         if index < self.get_number_of_cards() {
             return Ok(self.hand.remove(index));
@@ -24,6 +40,8 @@ impl Player {
         Err(Error::IndexOutOfBounds)
     }
 
+    /// Retrieves a reference to a card in the player's hand at the specified index.
+    /// Returns a reference to the card if the index is valid, otherwise returns `Err(Error::IndexOutOfBounds)`.
     pub fn get_card(&self, index: usize) -> PlayerResult<&Card> {
         if let Some(c) = self.hand.get(index) {
             return Ok(c);
@@ -32,18 +50,26 @@ impl Player {
         Err(Error::IndexOutOfBounds)
     }
 
+    /// Checks if the player's hand is empty.
+    /// Returns true if the hand is empty, otherwise false.
     pub fn is_hand_empty(&self) -> bool {
         self.hand.is_empty()
     }
 
+    /// Gets the number of cards in the player's hand.
+    /// Returns the number of cards.
     pub fn get_number_of_cards(&self) -> usize {
         self.hand.len()
     }
 
+    /// Retrieves a reference to the player's hand.
+    /// Returns a reference to the vector of cards.
     pub fn get_hand(&self) -> &Vec<Card> {
         &self.hand
     }
 
+    /// Converts the player's hand to a string representation.
+    /// Returns a string with each card and its index.
     fn hand_to_string(&self) -> String {
         self.hand
             .iter()
@@ -53,10 +79,12 @@ impl Player {
             .join("\n")
     }
 
+    /// Prints the player's hand to the console.
     pub fn print_hand(&self) {
         println!("{}", self.hand_to_string());
     }
 
+    /// Creates a new player with an empty hand.
     pub fn new() -> Self {
         Player { hand: Vec::new() }
     }
